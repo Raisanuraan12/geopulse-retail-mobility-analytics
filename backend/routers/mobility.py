@@ -4,7 +4,8 @@ from services.mobility_service import (
     get_mobility_summary,
     get_hourly_footfall,
     get_peak_traffic,
-    get_traffic_periods
+    get_traffic_periods,
+    get_mobility_insights
 )
 
 router = APIRouter(
@@ -62,4 +63,14 @@ def traffic_periods():
         "status": "success",
         "count": len(periods),
         "traffic_periods": periods
+    }
+
+
+@router.get("/insights")
+def mobility_insights():
+    insights = get_mobility_insights()
+
+    return {
+        "status": "success",
+        "insights": insights
     }

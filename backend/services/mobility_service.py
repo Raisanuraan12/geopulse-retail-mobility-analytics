@@ -69,8 +69,6 @@ def get_peak_traffic():
 
 
 def get_traffic_periods():
-    footfall = get_hourly_footfall()
-
     periods = {
         "morning": {"total_pings": 0, "devices": set()},
         "afternoon": {"total_pings": 0, "devices": set()},
@@ -108,3 +106,29 @@ def get_traffic_periods():
         })
 
     return result
+
+
+def get_mobility_insights():
+    periods = get_traffic_periods()
+
+    if not periods:
+        return None
+
+    busiest_period = max(
+        periods,
+        key=lambda item: item["total_pings"]
+    )
+
+    quietest_period = min(
+        periods,
+        key=lambda item: item["total_pings"]
+    )
+
+    return {
+        "busiest_period": busiest_period["period"],
+        "busiest_period_pings": busiest_period["total_pings"],
+        "busiest_period_unique_devices": busiest_period["unique_devices"],
+        "quietest_period": quietest_period["period"],
+        "quietest_period_pings": quietest_period["total_pings"],
+        "quietest_period_unique_devices": quietest_period["unique_devices"]
+    }
