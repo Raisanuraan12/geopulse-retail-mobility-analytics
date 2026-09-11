@@ -1,6 +1,8 @@
 from fastapi import APIRouter
-from services.mobility_service import get_mobility_summary
-
+from services.mobility_service import (
+    get_mobility_summary,
+    get_hourly_footfall
+)
 router = APIRouter(
     prefix="/mobility",
     tags=["Mobility Analytics"]
@@ -29,10 +31,11 @@ def get_stores():
 
 @router.get("/footfall")
 def get_footfall():
+    footfall = get_hourly_footfall()
+
     return {
         "status": "success",
-        "count": 0,
-        "footfall": []
+        "count": len(footfall),
+        "footfall": footfall
     }
-
 
