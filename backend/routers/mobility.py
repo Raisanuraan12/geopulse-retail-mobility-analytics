@@ -1,8 +1,11 @@
 from fastapi import APIRouter
+
 from services.mobility_service import (
     get_mobility_summary,
-    get_hourly_footfall
+    get_hourly_footfall,
+    get_peak_traffic
 )
+
 router = APIRouter(
     prefix="/mobility",
     tags=["Mobility Analytics"]
@@ -39,3 +42,12 @@ def get_footfall():
         "footfall": footfall
     }
 
+
+@router.get("/peak-traffic")
+def peak_traffic():
+    peak = get_peak_traffic()
+
+    return {
+        "status": "success",
+        "peak_traffic": peak
+    }

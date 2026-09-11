@@ -52,3 +52,17 @@ def get_hourly_footfall():
         })
 
     return footfall
+
+
+def get_peak_traffic():
+    footfall = get_hourly_footfall()
+
+    if not footfall:
+        return None
+
+    peak_hour = max(
+        footfall,
+        key=lambda item: item["total_pings"]
+    )
+
+    return peak_hour
