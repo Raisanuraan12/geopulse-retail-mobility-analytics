@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from services.mobility_service import get_mobility_summary
 
 router = APIRouter(
     prefix="/mobility",
@@ -7,15 +8,13 @@ router = APIRouter(
 
 
 @router.get("/summary")
-def get_mobility_summary():
+def mobility_summary():
+    summary = get_mobility_summary()
+
     return {
         "status": "success",
-        "message": "GeoPulse mobility analytics API is working",
-        "data": {
-            "total_devices": 0,
-            "total_pings": 0,
-            "active_stores": 0
-        }
+        "message": "GeoPulse mobility analytics summary",
+        "data": summary
     }
 
 
@@ -37,10 +36,3 @@ def get_footfall():
     }
 
 
-@router.get("/cannibalization")
-def get_cannibalization():
-    return {
-        "status": "success",
-        "count": 0,
-        "cannibalization": []
-    }
