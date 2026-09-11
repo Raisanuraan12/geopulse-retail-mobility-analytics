@@ -3,7 +3,8 @@ from fastapi import APIRouter
 from services.mobility_service import (
     get_mobility_summary,
     get_hourly_footfall,
-    get_peak_traffic
+    get_peak_traffic,
+    get_traffic_periods
 )
 
 router = APIRouter(
@@ -50,4 +51,15 @@ def peak_traffic():
     return {
         "status": "success",
         "peak_traffic": peak
+    }
+
+
+@router.get("/traffic-periods")
+def traffic_periods():
+    periods = get_traffic_periods()
+
+    return {
+        "status": "success",
+        "count": len(periods),
+        "traffic_periods": periods
     }

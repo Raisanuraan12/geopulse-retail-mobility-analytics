@@ -66,3 +66,45 @@ def get_peak_traffic():
     )
 
     return peak_hour
+
+
+def get_traffic_periods():
+    footfall = get_hourly_footfall()
+
+    periods = {
+        "morning": {"total_pings": 0, "devices": set()},
+        "afternoon": {"total_pings": 0, "devices": set()},
+        "evening": {"total_pings": 0, "devices": set()},
+        "night": {"total_pings": 0, "devices": set()}
+    }
+
+    # Read the original dataset so unique devices are not double-counted
+    # within each time period.
+    with open(DATASET_PATH, mode="r", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+
+        for row in reader:
+            hour = int(row["timestamp"][11:13])
+
+            if 6 <= hour < 12:
+                period = "morning"
+            elif 12 <= hour < 17:
+                period = "afternoon"
+            elif 17 <= hour < 21:
+                period = "evening"
+            else:
+                period = "night"
+
+            periods[period]["total_pings"] += 1
+            periods[period]["devices"].add(row["device_id"])
+
+    result = []
+
+    for period, values in periods.items():
+        result.append({
+            "period": period,
+            "total_pings": values["total_pings"],
+            "unique_devices": len(values["devices"])
+        })
+
+    return result
