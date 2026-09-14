@@ -74,3 +74,20 @@ def mobility_insights():
         "status": "success",
         "insights": insights
     }
+
+@router.get("/dashboard")
+def mobility_dashboard():
+    summary = get_mobility_summary()
+    peak = get_peak_traffic()
+    periods = get_traffic_periods()
+    insights = get_mobility_insights()
+
+    return {
+        "status": "success",
+        "dashboard": {
+            "summary": summary,
+            "peak_traffic": peak,
+            "traffic_periods": periods,
+            "insights": insights
+        }
+    }
