@@ -18,7 +18,12 @@ function App() {
 
           <a href="#" className="nav-item">
             <span>📍</span>
-            Mobility
+            Mobility Map
+          </a>
+
+          <a href="#" className="nav-item">
+            <span>🏪</span>
+            Stores
           </a>
 
           <a href="#" className="nav-item">
@@ -27,13 +32,8 @@ function App() {
           </a>
 
           <a href="#" className="nav-item">
-            <span>🚗</span>
-            Traffic
-          </a>
-
-          <a href="#" className="nav-item">
-            <span>🗺️</span>
-            Locations
+            <span>🔄</span>
+            Cannibalization
           </a>
 
           <a href="#" className="nav-item">
@@ -45,62 +45,206 @@ function App() {
 
       {/* Main Content */}
       <main className="main-content">
+        {/* Header */}
         <header className="topbar">
           <div>
             <h1>Dashboard</h1>
-            <p>Welcome to GeoPulse Retail Mobility Analytics</p>
+            <p>
+              Monitor retail mobility and location-based analytics
+            </p>
           </div>
 
           <div className="user-profile">
             <div className="avatar">N</div>
-            <span>Nikhil</span>
+            <div>
+              <strong>Nikhil</strong>
+              <small>Frontend Analyst</small>
+            </div>
           </div>
         </header>
 
-        {/* Dashboard Cards */}
+        {/* Statistics */}
         <section className="stats-grid">
           <div className="stat-card">
-            <span className="stat-icon">🚶</span>
+            <div className="stat-icon">🚶</div>
+
             <div>
-              <p>Total Mobility</p>
+              <p>Total GPS Pings</p>
               <h2>--</h2>
+              <span className="stat-label">Mobility data</span>
             </div>
           </div>
 
           <div className="stat-card">
-            <span className="stat-icon">🚗</span>
+            <div className="stat-icon">🏪</div>
+
             <div>
-              <p>Total Traffic</p>
+              <p>Active Stores</p>
               <h2>--</h2>
+              <span className="stat-label">Retail locations</span>
             </div>
           </div>
 
           <div className="stat-card">
-            <span className="stat-icon">📍</span>
+            <div className="stat-icon">👥</div>
+
             <div>
-              <p>Active Locations</p>
+              <p>Total Visitors</p>
               <h2>--</h2>
+              <span className="stat-label">Estimated footfall</span>
             </div>
           </div>
 
           <div className="stat-card">
-            <span className="stat-icon">📈</span>
+            <div className="stat-icon">📍</div>
+
             <div>
-              <p>Analytics</p>
+              <p>High Traffic Areas</p>
               <h2>--</h2>
+              <span className="stat-label">Priority locations</span>
             </div>
           </div>
         </section>
 
-        {/* Welcome Section */}
-        <section className="welcome-card">
-          <h2>GeoPulse Analytics</h2>
-          <p>
-            Monitor retail mobility, traffic patterns and location-based
-            analytics from one centralized dashboard.
-          </p>
+        {/* Main Dashboard Grid */}
+        <section className="dashboard-grid">
+          {/* Mobility Overview */}
+          <div className="dashboard-card mobility-card">
+            <div className="card-header">
+              <div>
+                <h3>Mobility Overview</h3>
+                <p>Hyper-local movement activity</p>
+              </div>
 
-          <button>View Analytics</button>
+              <button className="view-button">
+                View Map
+              </button>
+            </div>
+
+            <div className="map-placeholder">
+              <div className="map-content">
+                <span className="map-icon">🗺️</span>
+                <h3>Mobility Map</h3>
+                <p>
+                  Interactive geospatial visualization will appear here.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footfall */}
+          <div className="dashboard-card">
+            <div className="card-header">
+              <div>
+                <h3>Footfall Activity</h3>
+                <p>Visitor activity by time</p>
+              </div>
+            </div>
+
+            <div className="chart-placeholder">
+              <div className="chart-bars">
+                <div className="bar bar-1"></div>
+                <div className="bar bar-2"></div>
+                <div className="bar bar-3"></div>
+                <div className="bar bar-4"></div>
+                <div className="bar bar-5"></div>
+                <div className="bar bar-6"></div>
+                <div className="bar bar-7"></div>
+              </div>
+
+              <div className="chart-labels">
+                <span>6 AM</span>
+                <span>9 AM</span>
+                <span>12 PM</span>
+                <span>3 PM</span>
+                <span>6 PM</span>
+                <span>9 PM</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Store Performance */}
+        <section className="dashboard-card store-card">
+          <div className="card-header">
+            <div>
+              <h3>Store Performance</h3>
+              <p>Top retail locations by visitor activity</p>
+            </div>
+
+            <button className="view-button">
+              View Stores
+            </button>
+          </div>
+
+          <div className="store-table">
+            <div className="table-header">
+              <span>Store</span>
+              <span>Location</span>
+              <span>Visitors</span>
+              <span>Traffic</span>
+            </div>
+
+            <div className="table-row">
+              <span>Store A</span>
+              <span>Downtown</span>
+              <span>--</span>
+              <span className="traffic high">High</span>
+            </div>
+
+            <div className="table-row">
+              <span>Store B</span>
+              <span>Central Market</span>
+              <span>--</span>
+              <span className="traffic medium">Medium</span>
+            </div>
+
+            <div className="table-row">
+              <span>Store C</span>
+              <span>North Avenue</span>
+              <span>--</span>
+              <span className="traffic low">Low</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Insights */}
+        <section className="insights-grid">
+          <div className="insight-card">
+            <span className="insight-icon">📍</span>
+
+            <div>
+              <h3>Location Intelligence</h3>
+              <p>
+                Identify high-traffic areas and potential retail
+                opportunities.
+              </p>
+            </div>
+          </div>
+
+          <div className="insight-card">
+            <span className="insight-icon">🔄</span>
+
+            <div>
+              <h3>Cannibalization Analysis</h3>
+              <p>
+                Compare traffic overlap between existing and proposed
+                stores.
+              </p>
+            </div>
+          </div>
+
+          <div className="insight-card">
+            <span className="insight-icon">📊</span>
+
+            <div>
+              <h3>Footfall Analytics</h3>
+              <p>
+                Understand visitor patterns across different times
+                and locations.
+              </p>
+            </div>
+          </div>
         </section>
       </main>
     </div>
