@@ -9,3 +9,14 @@ export async function getMobilityDashboard() {
 
   return response.json();
 }
+
+
+export async function getHourlyFootfall() {
+  const response = await fetch(`${API_BASE_URL}/mobility/footfall`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch hourly footfall data");
+  }
+
+  return response.json();
+}
