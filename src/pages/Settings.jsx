@@ -1,0 +1,10 @@
+function Settings() {
+  return (
+    <div>
+      <h1>Settings</h1>
+      <p>GeoPulse application settings.</p>
+    </div>
+  );
+}
+
+export default Settings;
