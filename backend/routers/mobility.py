@@ -5,7 +5,8 @@ from services.mobility_service import (
     get_hourly_footfall,
     get_peak_traffic,
     get_traffic_periods,
-    get_mobility_insights
+    get_mobility_insights,
+    get_mobility_points
 )
 
 router = APIRouter(
@@ -90,4 +91,17 @@ def mobility_dashboard():
             "traffic_periods": periods,
             "insights": insights
         }
+    }
+
+
+@router.get("/points")
+def mobility_points(limit: int = 1000):
+    limit = max(1, min(limit, 5000))
+
+    points = get_mobility_points(limit)
+
+    return {
+        "status": "success",
+        "count": len(points),
+        "points": points
     }

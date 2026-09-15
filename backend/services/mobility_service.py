@@ -132,3 +132,22 @@ def get_mobility_insights():
         "quietest_period_pings": quietest_period["total_pings"],
         "quietest_period_unique_devices": quietest_period["unique_devices"]
     }
+
+def get_mobility_points(limit=1000):
+    points = []
+
+    with open(DATASET_PATH, mode="r", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+
+        for row in reader:
+            points.append({
+                "device_id": row["device_id"],
+                "latitude": float(row["latitude"]),
+                "longitude": float(row["longitude"]),
+                "timestamp": row["timestamp"]
+            })
+
+            if len(points) >= limit:
+                break
+
+    return points
