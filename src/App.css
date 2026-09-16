@@ -1,17 +1,23 @@
+/* ========================================
+   GLOBAL APP LAYOUT
+======================================== */
+
 * {
   box-sizing: border-box;
 }
 
-.app {
+.app-container {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   background: #f5f7fb;
   color: #1f2937;
 }
 
-/* =========================
+
+/* ========================================
    SIDEBAR
-========================= */
+======================================== */
 
 .sidebar {
   width: 250px;
@@ -20,74 +26,117 @@
   color: white;
   padding: 24px 16px;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.logo {
+.sidebar-logo {
   padding: 0 12px 28px;
   border-bottom: 1px solid #374151;
+  margin-bottom: 25px;
 }
 
-.logo h2 {
+.sidebar-logo h2 {
   color: white;
   font-size: 24px;
-  margin-bottom: 5px;
+  margin: 0 0 5px;
 }
 
-.logo span {
+.sidebar-logo span {
   color: #9ca3af;
   font-size: 12px;
 }
 
-.navigation {
-  margin-top: 25px;
+
+/* ========================================
+   SIDEBAR NAVIGATION
+======================================== */
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 }
 
-.nav-item {
+.nav-link {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 13px 14px;
-  margin-bottom: 7px;
   color: #d1d5db;
   text-decoration: none;
   border-radius: 8px;
-  transition: 0.2s;
+  transition: 0.2s ease;
 }
 
-.nav-item:hover {
+.nav-link:hover {
   background: #1f2937;
   color: white;
 }
 
-.nav-item.active {
+.nav-link.active {
   background: #2563eb;
   color: white;
 }
 
-/* =========================
+.nav-icon {
+  width: 24px;
+  text-align: center;
+  font-size: 17px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 25px 12px 0;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.sidebar-footer p {
+  margin: 0 0 5px;
+  color: #d1d5db;
+  font-weight: 600;
+}
+
+.sidebar-footer span {
+  font-size: 11px;
+}
+
+
+/* ========================================
    MAIN CONTENT
-========================= */
+======================================== */
 
 .main-content {
   flex: 1;
   min-width: 0;
   padding: 30px;
+  margin: 0;
 }
 
-.topbar {
+
+/* ========================================
+   HEADER
+======================================== */
+
+.top-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 28px;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 0 0 30px;
 }
 
-.topbar h1 {
-  margin: 0 0 6px;
+.top-header h1 {
+  margin: 0;
   font-size: 30px;
+  font-weight: 700;
 }
 
-.topbar p {
+.top-header p {
+  margin: 6px 0 0;
   color: #6b7280;
+  font-size: 14px;
 }
 
 .user-profile {
@@ -96,17 +145,7 @@
   gap: 10px;
 }
 
-.user-profile strong {
-  display: block;
-}
-
-.user-profile small {
-  display: block;
-  color: #6b7280;
-  margin-top: 2px;
-}
-
-.avatar {
+.user-avatar {
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -115,61 +154,126 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  font-weight: bold;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
-/* =========================
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-info strong {
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.user-info span {
+  margin-top: 3px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+
+/* ========================================
+   DASHBOARD
+======================================== */
+
+.dashboard {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* ========================================
    STATISTICS
-========================= */
+======================================== */
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   margin-bottom: 25px;
 }
 
 .stat-card {
   background: white;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 22px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.stat-card-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  background: #eff6ff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-.stat-card p {
+.stat-title {
+  margin: 0;
   color: #6b7280;
   font-size: 13px;
-  margin-bottom: 4px;
+  line-height: 1.4;
 }
 
 .stat-card h2 {
+  margin: 8px 0 0;
+  font-size: 26px;
+  color: #1f2937;
+}
+
+.stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+
+.stat-description {
+  margin: 15px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+/* ========================================
+   DASHBOARD WELCOME
+======================================== */
+
+.dashboard-welcome {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.dashboard-welcome h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.dashboard-welcome p {
   margin: 0;
-  font-size: 25px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-.stat-label {
-  color: #9ca3af;
-  font-size: 11px;
-}
 
-/* =========================
+/* ========================================
    DASHBOARD CARDS
-========================= */
+======================================== */
 
 .dashboard-grid {
   display: grid;
@@ -199,6 +303,7 @@
 }
 
 .card-header p {
+  margin: 0;
   color: #6b7280;
   font-size: 13px;
 }
@@ -217,9 +322,10 @@
   background: #dbeafe;
 }
 
-/* =========================
+
+/* ========================================
    MAP PLACEHOLDER
-========================= */
+======================================== */
 
 .map-placeholder {
   height: 300px;
@@ -242,17 +348,19 @@
 }
 
 .map-content h3 {
-  margin-bottom: 5px;
+  margin: 0 0 5px;
 }
 
 .map-content p {
+  margin: 0;
   color: #6b7280;
   font-size: 13px;
 }
 
-/* =========================
+
+/* ========================================
    FOOTFALL CHART
-========================= */
+======================================== */
 
 .chart-placeholder {
   height: 300px;
@@ -312,9 +420,10 @@
   font-size: 11px;
 }
 
-/* =========================
+
+/* ========================================
    STORE TABLE
-========================= */
+======================================== */
 
 .store-card {
   margin-bottom: 25px;
@@ -373,9 +482,10 @@
   color: #16a34a;
 }
 
-/* =========================
+
+/* ========================================
    INSIGHTS
-========================= */
+======================================== */
 
 .insights-grid {
   display: grid;
@@ -398,22 +508,24 @@
 
 .insight-card h3 {
   font-size: 16px;
-  margin-bottom: 7px;
+  margin: 0 0 7px;
 }
 
 .insight-card p {
+  margin: 0;
   color: #6b7280;
   font-size: 12px;
   line-height: 1.5;
 }
 
-/* =========================
-   RESPONSIVE
-========================= */
+
+/* ========================================
+   RESPONSIVE — TABLET
+======================================== */
 
 @media (max-width: 1100px) {
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dashboard-grid {
@@ -425,8 +537,13 @@
   }
 }
 
+
+/* ========================================
+   RESPONSIVE — MOBILE
+======================================== */
+
 @media (max-width: 700px) {
-  .app {
+  .app-container {
     flex-direction: column;
   }
 
@@ -435,24 +552,32 @@
     min-height: auto;
   }
 
-  .navigation {
-    display: flex;
+  .sidebar-nav {
+    flex-direction: row;
     flex-wrap: wrap;
     gap: 6px;
   }
 
-  .nav-item {
+  .nav-link {
     margin-bottom: 0;
+  }
+
+  .sidebar-footer {
+    margin-top: 20px;
   }
 
   .main-content {
     padding: 20px;
   }
 
-  .topbar {
+  .top-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 15px;
+  }
+
+  .user-profile {
+    width: 100%;
   }
 
   .stats-grid {
@@ -462,5 +587,9 @@
   .table-header,
   .table-row {
     grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 16px;
   }
 }
