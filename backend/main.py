@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.mobility import router as mobility_router
+from routers.snowflake import router as snowflake_router
 
 app = FastAPI(
     title="GeoPulse API",
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(mobility_router)
+app.include_router(snowflake_router)
 
 
 @app.get("/")
