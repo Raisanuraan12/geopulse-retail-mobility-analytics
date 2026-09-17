@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
-import "./App.css";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import Sidebar from "./components/Sidebar";
+import Header from "./components/Header";
 
 import Dashboard from "./pages/Dashboard";
 import MobilityMap from "./pages/MobilityMap";
@@ -9,97 +11,99 @@ import Cannibalization from "./pages/Cannibalization";
 import StoreDetails from "./pages/StoresDetails";
 import Settings from "./pages/Settings";
 
+import "./App.css";
+
+function AppLayout({ children, title }) {
+  return (
+    <div className="app-container">
+      <Sidebar />
+
+      <main className="main-content">
+        <Header title={title} />
+        {children}
+      </main>
+    </div>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
-      <div className="app">
-        {/* Sidebar */}
-        <aside className="sidebar">
-          <div className="logo">
-            <h2>GeoPulse</h2>
-            <span>Retail Mobility Analytics</span>
-          </div>
+      <Routes>
 
-          <nav className="navigation">
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                isActive ? "nav-item active" : "nav-item"
-              }
-            >
-              <span>📊</span>
-              Dashboard
-            </NavLink>
+        <Route
+          path="/"
+          element={
+            <AppLayout title="Dashboard">
+              <Dashboard />
+            </AppLayout>
+          }
+        />
 
-            <NavLink
-              to="/mobility-map"
-              className={({ isActive }) =>
-                isActive ? "nav-item active" : "nav-item"
-              }
-            >
-              <span>📍</span>
-              Mobility Map
-            </NavLink>
+        <Route
+          path="/dashboard"
+          element={
+            <AppLayout title="Dashboard">
+              <Dashboard />
+            </AppLayout>
+          }
+        />
 
-            <NavLink
-              to="/stores"
-              className={({ isActive }) =>
-                isActive ? "nav-item active" : "nav-item"
-              }
-            >
-              <span>🏪</span>
-              Stores
-            </NavLink>
+        <Route
+          path="/mobility-map"
+          element={
+            <AppLayout title="Mobility Map">
+              <MobilityMap />
+            </AppLayout>
+          }
+        />
 
-            <NavLink
-              to="/analytics"
-              className={({ isActive }) =>
-                isActive ? "nav-item active" : "nav-item"
-              }
-            >
-              <span>📈</span>
-              Analytics
-            </NavLink>
+        <Route
+          path="/stores"
+          element={
+            <AppLayout title="Stores">
+              <Stores />
+            </AppLayout>
+          }
+        />
 
-            <NavLink
-              to="/cannibalization"
-              className={({ isActive }) =>
-                isActive ? "nav-item active" : "nav-item"
-              }
-            >
-              <span>🔄</span>
-              Cannibalization
-            </NavLink>
+        <Route
+          path="/analytics"
+          element={
+            <AppLayout title="Analytics">
+              <Analytics />
+            </AppLayout>
+          }
+        />
 
-            <NavLink
-              to="/settings"
-              className={({ isActive }) =>
-                isActive ? "nav-item active" : "nav-item"
-              }
-            >
-              <span>⚙️</span>
-              Settings
-            </NavLink>
-          </nav>
-        </aside>
+        <Route
+          path="/cannibalization"
+          element={
+            <AppLayout title="Cannibalization Analysis">
+              <Cannibalization />
+            </AppLayout>
+          }
+        />
 
-        {/* Main Content */}
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/mobility-map" element={<MobilityMap />} />
-            <Route path="/stores" element={<Stores />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route
-              path="/cannibalization"
-              element={<Cannibalization />}
-            />
-            <Route path="/store-details" element={<StoreDetails />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
-        </main>
-      </div>
+        <Route
+          path="/store-details"
+          element={
+            <AppLayout title="Store Details">
+              <StoreDetails />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <AppLayout title="Settings">
+              <Settings />
+            </AppLayout>
+          }
+        />
+
+      </Routes>
     </BrowserRouter>
   );
 }
