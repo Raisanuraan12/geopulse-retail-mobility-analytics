@@ -45,3 +45,42 @@ def test_snowflake_connection():
     finally:
         cursor.close()
         connection.close()
+
+
+def get_snowflake_mobility_points(limit=1000):
+    """Retrieve mobility GPS points from Snowflake."""
+    limit = max(1, min(limit, 5000))
+
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                DEVICE_ID,
+                LATITUDE,
+                LONGITUDE,
+                PING_TIMESTAMP
+            FROM RAW.STG_MOBILITY_PINGS
+            ORDER BY PING_TIMESTAMP
+            LIMIT %s
+            """,
+            (limit,)
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "device_id": row[0],
+                "latitude": row[1],
+                "longitude": row[2],
+                "timestamp": row[3].isoformat() if row[3] else None,
+            }
+            for row in rows
+        ]
+
+    finally:
+        cursor.close()
+        connection.close()
