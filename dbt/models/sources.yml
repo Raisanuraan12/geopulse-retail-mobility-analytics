@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: geopulse_raw
+    description: "The raw data schema ingested from our spatial engineering pipeline."
+    database: GEOPULSE_DB
+    schema: RAW
+    tables:
+      - name: staging_gps_pings
+        description: "Raw GPS mobility pings data loaded via CSV."
+      - name: staging_retail_stores
+        description: "Raw retail store metadata and geography points."
