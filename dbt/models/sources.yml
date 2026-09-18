@@ -6,7 +6,7 @@ sources:
     database: GEOPULSE_DB
     schema: RAW
     tables:
-      - name: staging_gps_pings
+      - name: STG_MOBILITY_PINGS
         description: "Raw GPS mobility pings data loaded via CSV."
-      - name: staging_retail_stores
+      - name: STG_STORE_LOCATIONS
         description: "Raw retail store metadata and geography points."
