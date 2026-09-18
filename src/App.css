@@ -880,3 +880,86 @@
     flex-wrap: wrap;
   }
 }
+/* ========================================
+   DAY 9 — INTERACTIVE LEAFLET MAP
+======================================== */
+
+.leaflet-map {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  border-radius: 10px;
+}
+
+
+/* Map Overlay */
+
+.map-overlay {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 500;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  background: rgba(255, 255, 255, 0.95);
+
+  padding: 10px 13px;
+
+  border-radius: 8px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+  font-size: 12px;
+}
+
+.map-overlay strong {
+  color: #1f2937;
+}
+
+.map-overlay span {
+  color: #6b7280;
+}
+
+
+/* Make sure map stays inside card */
+
+.mobility-map {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+
+/* Leaflet popup */
+
+.leaflet-popup-content {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
+/* ========================================
+   DAY 9 — RESPONSIVE MAP
+======================================== */
+
+@media (max-width: 700px) {
+
+  .mobility-map {
+    height: 400px;
+  }
+
+  .leaflet-map {
+    min-height: 400px;
+  }
+
+  .map-overlay {
+    top: 10px;
+    left: 10px;
+  }
+
+}
