@@ -28,7 +28,13 @@ def aggregate_daily_visitors(visits: list[dict]) -> dict[str, dict]:
                 store_id, store_name, visit_date, device_id, dwell_minutes, visit_type.
 
     Returns:
-        Dict keyed by store_id with aggregated metrics.
+        Dict keyed by store_id with aggregated metrics. Each value contains:
+            - store_id, store_name
+            - total_visits, unique_visitors
+            - avg_dwell_minutes, median_dwell_minutes
+            - pass_by_count, short_visit_count, long_visit_count
+            - visitor_set (set[str]): full set of unique device_ids for this store.
+              Used by find_cannibalization_pairs() to compute visitor overlap.
     """
     store_metrics: dict[str, dict] = {}
 
@@ -55,9 +61,14 @@ def aggregate_daily_visitors(visits: list[dict]) -> dict[str, dict]:
             "pass_by_count": visit_type_counts.get("pass_by", 0),
             "short_visit_count": visit_type_counts.get("short_visit", 0),
             "long_visit_count": visit_type_counts.get("long_visit", 0),
+            # visitor_set is required by find_cannibalization_pairs() to compute
+            # shared-visitor overlap between nearby stores.  Previously missing,
+            # causing cannibalization overlap to always silently return 0%.
+            "visitor_set": unique_devices,
         }
 
     return store_metrics
+
 
 
 def _median(values: list[float]) -> float:
