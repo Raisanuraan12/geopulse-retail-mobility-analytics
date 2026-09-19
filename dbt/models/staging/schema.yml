@@ -1,0 +1,73 @@
+version: 2
+
+sources:
+  - name: geopulse_raw
+    database: GEOPULSE_DB
+    schema: RAW
+    description: "Raw GPS ping and store join data landed from the ingestion pipeline."
+    tables:
+      - name: gps_ping_store_joins
+        description: "Joined GPS ping-to-store records produced by the spatial transform step."
+        columns:
+          - name: device_id
+            description: "Anonymised device identifier."
+            tests:
+              - not_null
+          - name: store_id
+            description: "Store identifier from the store locations config."
+            tests:
+              - not_null
+          - name: timestamp_raw
+            description: "Raw timestamp string from the GPS ping CSV."
+          - name: h3_index
+            description: "H3 cell ID at resolution 9 for the ping location."
+          - name: ingested_at
+            description: "Pipeline run timestamp when the record was inserted."
+
+models:
+  - name: stg_gps_ping_store_joins
+    description: >
+      Staging view over the raw GPS ping-to-store joins table.
+      Applies type casting, null filtering, and column renaming
+      to prepare data for mart consumption.
+    columns:
+      - name: device_id
+        description: "Anonymised device identifier."
+        tests:
+          - not_null
+      - name: store_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_stores')
+              field: store_id
+      - name: timestamp
+        description: "Parsed NTZ timestamp of the GPS ping."
+        tests:
+          - not_null
+      - name: h3_index
+        description: "H3 hex cell ID (resolution 9)."
+
+  - name: fct_footfall_daily
+    description: >
+      Daily visit-level footfall fact table. One row per unique
+      device-store-date combination. Includes dwell time and visit type.
+    columns:
+      - name: visit_key
+        description: "Surrogate key: hash of device_id + store_id + visit_date."
+        tests:
+          - unique
+          - not_null
+      - name: store_id
+        tests:
+          - not_null
+      - name: visit_date
+        tests:
+          - not_null
+      - name: device_id
+        tests:
+          - not_null
+      - name: visit_type
+        tests:
+          - accepted_values:
+              values: ['pass_by', 'short_visit', 'long_visit']
