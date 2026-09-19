@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
+
 import {
   MapContainer,
   TileLayer,
   Marker,
-  Popup
+  Popup,
+  useMap
 } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
@@ -25,11 +28,139 @@ L.Icon.Default.mergeOptions({
 });
 
 
+// Backend API
+const API_URL =
+  "http://127.0.0.1:8000/mobility/points?limit=1000";
+
+
+// Automatically fit map to real GPS points
+function MapBounds({ points }) {
+
+  const map = useMap();
+
+  useEffect(() => {
+
+    if (!points || points.length === 0) {
+      return;
+    }
+
+    const bounds = L.latLngBounds(
+      points.map((point) => [
+        Number(point.latitude),
+        Number(point.longitude)
+      ])
+    );
+
+    map.fitBounds(bounds, {
+      padding: [40, 40]
+    });
+
+  }, [points, map]);
+
+  return null;
+}
+
+
 function MobilityMap() {
 
-  // Temporary map center
-  // Real location data will come from the backend later.
-  const mapCenter = [17.6599, 75.9064];
+  const [points, setPoints] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+
+  // Fetch real mobility data
+  const fetchMobilityPoints = async () => {
+
+    try {
+
+      setLoading(true);
+
+      setError("");
+
+
+      const response = await fetch(API_URL);
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          `API request failed with status ${response.status}`
+        );
+
+      }
+
+
+      const data = await response.json();
+
+
+      // Backend response:
+      // {
+      //   status: "success",
+      //   count: 5,
+      //   points: [...]
+      // }
+
+      if (!Array.isArray(data.points)) {
+
+        throw new Error(
+          "Invalid mobility API response: points array not found."
+        );
+
+      }
+
+
+      // Keep only valid GPS points
+      const validPoints = data.points.filter(
+        (point) =>
+          point &&
+          Number.isFinite(Number(point.latitude)) &&
+          Number.isFinite(Number(point.longitude))
+      );
+
+
+      setPoints(validPoints);
+
+    } catch (err) {
+
+      console.error(
+        "Mobility Points API Error:",
+        err
+      );
+
+      setError(
+        "Unable to load mobility points from the backend."
+      );
+
+      setPoints([]);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+
+  // Load mobility points when page opens
+  useEffect(() => {
+
+    fetchMobilityPoints();
+
+  }, []);
+
+
+  // Use first real GPS point as initial map center
+  const mapCenter =
+    points.length > 0
+      ? [
+          Number(points[0].latitude),
+          Number(points[0].longitude)
+        ]
+      : null;
+
 
   return (
     <div className="mobility-page">
@@ -39,16 +170,25 @@ function MobilityMap() {
       <div className="page-intro">
 
         <div>
+
           <h2>Mobility Map</h2>
 
           <p>
             Explore hyper-local mobility patterns, foot traffic,
             and high-traffic retail zones.
           </p>
+
         </div>
 
-        <button className="map-button">
-          Refresh Map
+
+        <button
+          className="map-button"
+          onClick={fetchMobilityPoints}
+          disabled={loading}
+        >
+
+          {loading ? "Loading..." : "Refresh Map"}
+
         </button>
 
       </div>
@@ -65,8 +205,13 @@ function MobilityMap() {
           </span>
 
           <div>
+
             <p>Total GPS Pings</p>
-            <h3>--</h3>
+
+            <h3>
+              {loading ? "--" : points.length}
+            </h3>
+
           </div>
 
         </div>
@@ -79,8 +224,13 @@ function MobilityMap() {
           </span>
 
           <div>
+
             <p>Active Zones</p>
-            <h3>--</h3>
+
+            <h3>
+              --
+            </h3>
+
           </div>
 
         </div>
@@ -93,8 +243,13 @@ function MobilityMap() {
           </span>
 
           <div>
+
             <p>High Traffic Zones</p>
-            <h3>--</h3>
+
+            <h3>
+              --
+            </h3>
+
           </div>
 
         </div>
@@ -107,8 +262,13 @@ function MobilityMap() {
           </span>
 
           <div>
+
             <p>Nearby Stores</p>
-            <h3>--</h3>
+
+            <h3>
+              --
+            </h3>
+
           </div>
 
         </div>
@@ -123,12 +283,16 @@ function MobilityMap() {
         <div className="map-card-header">
 
           <div>
-            <h3>Retail Mobility Overview</h3>
+
+            <h3>
+              Retail Mobility Overview
+            </h3>
 
             <p>
               Interactive visualization of mobility activity
               and retail locations
             </p>
+
           </div>
 
 
@@ -136,62 +300,225 @@ function MobilityMap() {
 
             <span className="status-dot"></span>
 
-            Live Map
+            {loading
+              ? "Loading Map"
+              : error
+              ? "API Error"
+              : "Live Map"}
 
           </div>
 
         </div>
 
 
+        {/* API Error */}
+
+        {error && (
+
+          <div
+            style={{
+              padding: "15px",
+              margin: "15px",
+              borderRadius: "8px",
+              background: "#fff1f2",
+              border: "1px solid #fecdd3",
+              color: "#be123c"
+            }}
+          >
+
+            <strong>
+              Mobility API Error
+            </strong>
+
+            <p style={{ marginTop: "5px" }}>
+              {error}
+            </p>
+
+          </div>
+
+        )}
+
+
         {/* Interactive Map */}
 
         <div className="mobility-map">
 
-          <MapContainer
-            center={mapCenter}
-            zoom={13}
-            scrollWheelZoom={true}
-            className="leaflet-map"
-          >
+          {/* Loading State */}
 
-            <TileLayer
-              attribution='&copy; OpenStreetMap contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+          {loading && (
+
+            <div
+              style={{
+                height: "100%",
+                minHeight: "500px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#f8fafc"
+              }}
+            >
+
+              <div style={{ textAlign: "center" }}>
+
+                <h3>
+                  Loading Mobility Data...
+                </h3>
+
+                <p>
+                  Fetching GPS points from backend.
+                </p>
+
+              </div>
+
+            </div>
+
+          )}
 
 
-            <Marker position={mapCenter}>
+          {/* Empty State */}
 
-              <Popup>
+          {!loading &&
+            !error &&
+            points.length === 0 && (
 
-                <strong>GeoPulse Location</strong>
+              <div
+                style={{
+                  height: "100%",
+                  minHeight: "500px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#f8fafc"
+                }}
+              >
 
-                <br />
+                <div style={{ textAlign: "center" }}>
 
-                Mobility analysis area
+                  <h3>
+                    No Mobility Points Found
+                  </h3>
 
-                <br />
+                  <p>
+                    The backend returned no GPS points.
+                  </p>
 
-                GPS and footfall data will appear here.
+                </div>
 
-              </Popup>
+              </div>
 
-            </Marker>
+            )}
 
-          </MapContainer>
+
+          {/* Real Leaflet Map */}
+
+          {!loading &&
+            !error &&
+            points.length > 0 &&
+            mapCenter && (
+
+              <MapContainer
+                center={mapCenter}
+                zoom={13}
+                scrollWheelZoom={true}
+                className="leaflet-map"
+              >
+
+                <TileLayer
+                  attribution='&copy; OpenStreetMap contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+
+
+                {/* Automatically fit all GPS points */}
+
+                <MapBounds
+                  points={points}
+                />
+
+
+                {/* Real Backend GPS Points */}
+
+                {points.map((point, index) => (
+
+                  <Marker
+                    key={
+                      `${point.device_id}-${point.timestamp}-${index}`
+                    }
+                    position={[
+                      Number(point.latitude),
+                      Number(point.longitude)
+                    ]}
+                  >
+
+                    <Popup>
+
+                      <strong>
+                        Mobility Point
+                      </strong>
+
+                      <br />
+
+                      <strong>
+                        Device ID:
+                      </strong>{" "}
+                      {point.device_id}
+
+                      <br />
+
+                      <strong>
+                        Latitude:
+                      </strong>{" "}
+                      {point.latitude}
+
+                      <br />
+
+                      <strong>
+                        Longitude:
+                      </strong>{" "}
+                      {point.longitude}
+
+                      <br />
+
+                      <strong>
+                        Timestamp:
+                      </strong>{" "}
+
+                      {point.timestamp
+                        ? new Date(
+                            point.timestamp
+                          ).toLocaleString()
+                        : "N/A"}
+
+                    </Popup>
+
+                  </Marker>
+
+                ))}
+
+              </MapContainer>
+
+            )}
 
 
           {/* Map Overlay */}
 
-          <div className="map-overlay">
+          {!loading &&
+            !error &&
+            points.length > 0 && (
 
-            <strong>Mobility Analysis Area</strong>
+              <div className="map-overlay">
 
-            <span>
-              Interactive Map
-            </span>
+                <strong>
+                  Mobility Analysis Area
+                </strong>
 
-          </div>
+                <span>
+                  {points.length} GPS points loaded
+                </span>
+
+              </div>
+
+            )}
 
         </div>
 
@@ -200,7 +527,9 @@ function MobilityMap() {
 
         <div className="map-legend">
 
-          <h4>Traffic Intensity</h4>
+          <h4>
+            Traffic Intensity
+          </h4>
 
 
           <div className="legend-items">
