@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from services.snowflake_service import (
     test_snowflake_connection,
     get_snowflake_mobility_points,
+    get_snowflake_stores,
 )
 
 
@@ -45,4 +46,23 @@ def snowflake_mobility_points(limit: int = 1000):
         raise HTTPException(
             status_code=503,
             detail=f"Snowflake mobility data unavailable: {str(error)}"
+        )
+
+
+@router.get("/stores")
+def snowflake_stores(limit: int = 100):
+    try:
+        stores = get_snowflake_stores(limit)
+
+        return {
+            "status": "success",
+            "source": "snowflake",
+            "count": len(stores),
+            "stores": stores,
+        }
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Snowflake store data unavailable: {str(error)}"
         )
