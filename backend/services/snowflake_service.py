@@ -84,3 +84,42 @@ def get_snowflake_mobility_points(limit=1000):
     finally:
         cursor.close()
         connection.close()
+
+
+def get_snowflake_stores(limit=100):
+    """Retrieve retail store locations from Snowflake."""
+    limit = max(1, min(limit, 1000))
+
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                STORE_ID,
+                STORE_NAME,
+                LATITUDE,
+                LONGITUDE
+            FROM RAW.STG_STORE_LOCATIONS
+            ORDER BY STORE_ID
+            LIMIT %s
+            """,
+            (limit,)
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "store_id": row[0],
+                "store_name": row[1],
+                "latitude": row[2],
+                "longitude": row[3],
+            }
+            for row in rows
+        ]
+
+    finally:
+        cursor.close()
+        connection.close()
