@@ -1,5 +1,6 @@
 with source as (
-    select * from {{ source('geopulse_raw', 'STG_STORE_LOCATIONS') }}
+    -- Use ref() because this is coming from your seeded CSV
+    select * from {{ ref('stg_store_locations') }}
 ),
 
 transformed as (
@@ -9,8 +10,8 @@ transformed as (
         -- Clean up string artifacts from CSV ingestion
         trim(store_name) as store_name_clean,
         
-        -- Aliasing to geography_point for downstream spatial joins
-        catchment_polygon as geography_point
+        -- Generate the spatial point using the latitude and longitude from the CSV
+        st_makepoint(longitude, latitude) as geography_point
         
     from source
 )
