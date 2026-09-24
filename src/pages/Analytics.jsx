@@ -1,3 +1,4 @@
+import API_BASE_URL from "../services/api";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -10,9 +11,8 @@ import {
   Tooltip
 } from "recharts";
 
-
-const MOBILITY_API_URL =
-  "http://127.0.0.1:8000/mobility/points?limit=1000";
+ const API_URL =
+  `${API_BASE_URL}/mobility/points?limit=1000`;
 
 
 function Analytics() {

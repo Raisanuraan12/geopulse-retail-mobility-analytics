@@ -1,7 +1,9 @@
+
+import API_BASE_URL from "../services/api";
 import { useEffect, useState } from "react";
 
-const STORE_API_URL =
-  "http://127.0.0.1:8000/snowflake/stores?limit=1000";
+  const STORE_API_URL =
+  `${API_BASE_URL}/snowflake/stores?limit=1000`;
 
 function Stores() {
   const [stores, setStores] = useState([]);

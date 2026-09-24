@@ -1,3 +1,4 @@
+import API_BASE_URL from "../services/api";
 import { useEffect, useState } from "react";
 
 import {
@@ -11,9 +12,6 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import L from "leaflet";
-
-
-// Fix default Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 
 L.Icon.Default.mergeOptions({
@@ -26,11 +24,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl:
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png"
 });
-
-
 // Backend API
 const API_URL =
-  "http://127.0.0.1:8000/mobility/points?limit=1000";
+  `${API_BASE_URL}/mobility/points?limit=1000`;
 
 
 // Automatically fit map to real GPS points
