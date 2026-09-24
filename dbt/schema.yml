@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: int_ping_store_mapping
+    description: "Spatial mapping of pings to store catchment polygons."
+    columns:
+      - name: device_id
+        tests:
+          - not_null
+      - name: store_id
+        tests:
+          - not_null
+
+  - name: fct_hourly_footfall
+    description: "Core aggregation model calculating hourly unique visitors and ping volume per store."
+    columns:
+      - name: store_id
+        tests:
+          - not_null
+      - name: traffic_hour
+        tests:
+          - not_null
+      - name: total_unique_visitors
+        tests:
+          - not_null
+      - name: total_ping_volume
+        tests:
+          - not_null
