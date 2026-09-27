@@ -35,9 +35,8 @@ function Analytics() {
 
 
       const response = await fetch(
-        MOBILITY_API_URL
+        API_URL
       );
-
 
       if (!response.ok) {
 
