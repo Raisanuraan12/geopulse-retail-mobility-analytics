@@ -123,3 +123,42 @@ def get_snowflake_stores(limit=100):
     finally:
         cursor.close()
         connection.close()
+
+def get_snowflake_footfall_visits():
+    """Retrieve daily store visit records used for cannibalization analysis."""
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                STORE_ID,
+                STORE_NAME,
+                VISIT_DATE,
+                DEVICE_ID,
+                DWELL_MINUTES,
+                VISIT_TYPE
+            FROM FCT_FOOTFALL_DAILY
+            ORDER BY VISIT_DATE, STORE_ID
+            """
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "store_id": row[0],
+                "store_name": row[1],
+                "visit_date": row[2].isoformat() if row[2] else None,
+                "device_id": row[3],
+                "dwell_minutes": float(row[4]) if row[4] is not None else 0.0,
+                "visit_type": row[5],
+            }
+            for row in rows
+        ]
+
+    finally:
+        cursor.close()
+        connection.close()
+        
