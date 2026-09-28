@@ -1,5 +1,14 @@
 import API_BASE_URL from "../services/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip
+} from "recharts";
 
 const STORE_API_URL =
   `${API_BASE_URL}/snowflake/stores?limit=1000`;
@@ -7,7 +16,6 @@ const STORE_API_URL =
 const MOBILITY_API_URL =
   `${API_BASE_URL}/mobility/points?limit=1000`;
 
-// Stores within this distance are considered nearby.
 const CANNIBALIZATION_RADIUS_METERS = 1000;
 
 
@@ -208,7 +216,7 @@ function Cannibalization() {
     );
 
 
-  // Load both datasets
+  // Load data
   const fetchCannibalizationData =
     useCallback(
       async (signal) => {
@@ -270,7 +278,7 @@ function Cannibalization() {
     );
 
 
-  // Load data when page opens
+  // Load when page opens
   useEffect(() => {
 
     const controller =
@@ -359,7 +367,7 @@ function Cannibalization() {
           }
 
 
-          // Count mobility points near either store.
+          // Count mobility points near either store
           let nearbyMobility = 0;
 
           mobilityPoints.forEach(
@@ -398,7 +406,9 @@ function Cannibalization() {
                   distanceFromB <=
                     CANNIBALIZATION_RADIUS_METERS)
               ) {
+
                 nearbyMobility += 1;
+
               }
 
             }
@@ -406,6 +416,7 @@ function Cannibalization() {
 
 
           pairs.push({
+
             storeAId:
               storeA.store_id,
 
@@ -421,6 +432,7 @@ function Cannibalization() {
             distance,
 
             nearbyMobility
+
           });
 
         }
@@ -438,7 +450,7 @@ function Cannibalization() {
     ]);
 
 
-  // Search store pairs
+  // Search
   const filteredPairs =
     useMemo(() => {
 
@@ -476,7 +488,7 @@ function Cannibalization() {
     ]);
 
 
-  // Stores participating in nearby pairs
+  // Stores involved in nearby relationships
   const storesWithNearbyRelations =
     useMemo(() => {
 
@@ -502,7 +514,38 @@ function Cannibalization() {
     }, [storePairs]);
 
 
-  // Closest store pair
+  // Prepare chart data
+  const chartData =
+    useMemo(() => {
+
+      return filteredPairs
+        .slice(0, 10)
+        .map(
+          (pair, index) => ({
+
+            pair:
+              `Pair ${index + 1}`,
+
+            stores:
+              `${pair.storeAName} ↔ ${pair.storeBName}`,
+
+            distance:
+              Number(
+                (
+                  pair.distance / 1000
+                ).toFixed(2)
+              ),
+
+            mobility:
+              pair.nearbyMobility
+
+          })
+        );
+
+    }, [filteredPairs]);
+
+
+  // Closest pair
   const closestPair =
     storePairs.length > 0
       ? storePairs[0]
@@ -512,6 +555,7 @@ function Cannibalization() {
   return (
 
     <div className="stores-page">
+
 
       {/* Page Introduction */}
 
@@ -524,8 +568,8 @@ function Cannibalization() {
           </h2>
 
           <p>
-            Analyze nearby retail stores using
-            geographic proximity and mobility activity.
+            Visualize nearby store relationships
+            using geographic proximity and mobility activity.
           </p>
 
         </div>
@@ -558,7 +602,6 @@ function Cannibalization() {
       {/* Summary Cards */}
 
       <div className="mobility-stats">
-
 
         <div className="mobility-stat-card">
 
@@ -636,7 +679,7 @@ function Cannibalization() {
           <div>
 
             <p>
-              Stores in Nearby Pairs
+              Stores in Pairs
             </p>
 
             <h3>
@@ -652,7 +695,122 @@ function Cannibalization() {
       </div>
 
 
-      {/* Analysis Card */}
+      {/* Visualization */}
+
+      {!loading &&
+        !error &&
+        chartData.length > 0 && (
+
+          <div className="stores-card">
+
+            <div className="stores-card-header">
+
+              <div>
+
+                <h3>
+                  Cannibalization Visualization
+                </h3>
+
+                <p>
+                  Distance and nearby mobility activity
+                  for the closest store relationships.
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div className="cannibalization-chart">
+
+              <ResponsiveContainer
+                width="100%"
+                height={350}
+              >
+
+                <BarChart
+                  data={chartData}
+                  margin={{
+                    top: 10,
+                    right: 20,
+                    left: 10,
+                    bottom: 10
+                  }}
+                >
+
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                  />
+
+                  <XAxis
+                    dataKey="pair"
+                  />
+
+                  <YAxis />
+
+                  <Tooltip
+                    formatter={(
+                      value,
+                      name
+                    ) => {
+
+                      if (
+                        name === "distance"
+                      ) {
+                        return [
+                          `${value} km`,
+                          "Distance"
+                        ];
+                      }
+
+                      return [
+                        value,
+                        "Nearby Mobility"
+                      ];
+
+                    }}
+                    labelFormatter={(
+                      label
+                    ) => {
+
+                      const item =
+                        chartData.find(
+                          (entry) =>
+                            entry.pair ===
+                            label
+                        );
+
+                      return item
+                        ? item.stores
+                        : label;
+
+                    }}
+                  />
+
+                  <Bar
+                    dataKey="mobility"
+                    name="Nearby Mobility"
+                    fill="#2563eb"
+                    radius={[
+                      5,
+                      5,
+                      0,
+                      0
+                    ]}
+                  />
+
+                </BarChart>
+
+              </ResponsiveContainer>
+
+            </div>
+
+          </div>
+
+        )}
+
+
+      {/* Analysis Table */}
 
       <div className="stores-card">
 
@@ -661,12 +819,12 @@ function Cannibalization() {
           <div>
 
             <h3>
-              Nearby Store Analysis
+              Nearby Store Relationships
             </h3>
 
             <p>
-              Stores located within 1 kilometer
-              of another store.
+              Store pairs within the 1 kilometer
+              geographic analysis radius.
             </p>
 
           </div>
@@ -695,12 +853,12 @@ function Cannibalization() {
           <div className="store-message">
 
             <h3>
-              Loading Analysis...
+              Loading Visualization...
             </h3>
 
             <p>
-              Fetching store locations and
-              mobility data from the backend.
+              Fetching store and mobility
+              data from the backend.
             </p>
 
           </div>
@@ -744,7 +902,7 @@ function Cannibalization() {
           )}
 
 
-        {/* No stores */}
+        {/* No data */}
 
         {!loading &&
           !error &&
@@ -766,7 +924,7 @@ function Cannibalization() {
           )}
 
 
-        {/* No nearby pairs */}
+        {/* No pairs */}
 
         {!loading &&
           !error &&
@@ -781,7 +939,7 @@ function Cannibalization() {
 
               <p>
                 No stores were found within
-                the 1 kilometer analysis radius.
+                the 1 kilometer radius.
               </p>
 
             </div>
@@ -789,7 +947,7 @@ function Cannibalization() {
           )}
 
 
-        {/* No search result */}
+        {/* No search results */}
 
         {!loading &&
           !error &&
@@ -803,7 +961,7 @@ function Cannibalization() {
               </h3>
 
               <p>
-                No nearby store pairs match
+                No store pairs match
                 "{searchTerm}".
               </p>
 
@@ -821,7 +979,7 @@ function Cannibalization() {
           )}
 
 
-        {/* Store Pair Table */}
+        {/* Table */}
 
         {!loading &&
           !error &&
@@ -866,7 +1024,9 @@ function Cannibalization() {
                     (pair, index) => (
 
                       <tr
-                        key={`${pair.storeAId}-${pair.storeBId}-${index}`}
+                        key={
+                          `${pair.storeAId}-${pair.storeBId}-${index}`
+                        }
                       >
 
                         <td>
@@ -915,7 +1075,9 @@ function Cannibalization() {
                                 : "store-activity-zero"
                             }
                           >
-                            {pair.nearbyMobility}
+                            {
+                              pair.nearbyMobility
+                            }
                           </strong>
 
                         </td>
@@ -952,105 +1114,7 @@ function Cannibalization() {
       </div>
 
 
-      {/* Closest Pair */}
-
-      {!loading &&
-        !error &&
-        closestPair && (
-
-          <div className="store-details-panel">
-
-            <div className="store-details-header">
-
-              <div>
-
-                <h3>
-                  Closest Nearby Store Pair
-                </h3>
-
-                <p>
-                  Geographic proximity analysis
-                </p>
-
-              </div>
-
-            </div>
-
-
-            <div className="store-details-grid">
-
-              <div>
-
-                <span>
-                  Store A
-                </span>
-
-                <strong>
-                  {closestPair.storeAName}
-                </strong>
-
-              </div>
-
-
-              <div>
-
-                <span>
-                  Store B
-                </span>
-
-                <strong>
-                  {closestPair.storeBName}
-                </strong>
-
-              </div>
-
-
-              <div>
-
-                <span>
-                  Distance
-                </span>
-
-                <strong>
-                  {formatDistance(
-                    closestPair.distance
-                  )}
-                </strong>
-
-              </div>
-
-
-              <div>
-
-                <span>
-                  Nearby Mobility
-                </span>
-
-                <strong>
-                  {closestPair.nearbyMobility}
-                </strong>
-
-              </div>
-
-            </div>
-
-
-            <p className="store-details-note">
-
-              This analysis identifies geographic
-              proximity between stores and nearby
-              mobility activity. It does not represent
-              confirmed customer switching, revenue
-              loss, or sales cannibalization.
-
-            </p>
-
-          </div>
-
-        )}
-
-
-      {/* Selected Pair Details */}
+      {/* Selected Pair */}
 
       {selectedPair && (
 
@@ -1061,11 +1125,11 @@ function Cannibalization() {
             <div>
 
               <h3>
-                Store Pair Details
+                Selected Store Pair
               </h3>
 
               <p>
-                Selected cannibalization analysis pair
+                Geographic and mobility analysis
               </p>
 
             </div>
@@ -1115,32 +1179,6 @@ function Cannibalization() {
             <div>
 
               <span>
-                Store A ID
-              </span>
-
-              <strong>
-                {selectedPair.storeAId}
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Store B ID
-              </span>
-
-              <strong>
-                {selectedPair.storeBId}
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
                 Distance
               </span>
 
@@ -1170,12 +1208,11 @@ function Cannibalization() {
 
           <p className="store-details-note">
 
-            The 1 km radius is used only for
-            geographic proximity analysis. Nearby
-            mobility points indicate GPS activity
-            around the store pair and should not be
-            interpreted as confirmed customer
-            overlap.
+            The visualization represents geographic
+            proximity and nearby GPS mobility activity.
+            It does not establish confirmed customer
+            switching, revenue loss, or actual sales
+            cannibalization.
 
           </p>
 
