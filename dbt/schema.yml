@@ -26,3 +26,35 @@ models:
       - name: total_ping_volume
         tests:
           - not_null
+
+  - name: int_device_location_tracking
+    description: "Tracks chronological device movement between retail locations using window functions."
+    columns:
+      - name: device_id
+        description: "Unique identifier for the mobile device."
+        tests:
+          - not_null
+      - name: current_store
+        description: "The current store catchment area the device is visiting."
+      - name: previous_store
+        description: "The previous store the device visited (calculated via LAG window function)."
+
+  - name: fct_store_cannibalization
+    description: "Data mart calculating the exact percentage of shared foot traffic and cannibalization between stores."
+    columns:
+      - name: existing_store_name
+        description: "The original store the customer visited."
+        tests:
+          - not_null
+      - name: new_store_name
+        description: "The subsequent store the customer visited."
+        tests:
+          - not_null
+      - name: shared_visitors_count
+        description: "Count of unique devices that visited both the existing and new locations."
+        tests:
+          - not_null
+      - name: cannibalization_percentage
+        description: "The exact percentage of the existing store's traffic that was cannibalized by the new store."
+        tests:
+          - not_null
