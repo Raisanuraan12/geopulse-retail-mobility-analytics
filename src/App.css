@@ -1818,3 +1818,52 @@
   }
 
 }
+/* ================================= */
+/* DAY 22 - STORE DETAILS */
+/* ================================= */
+
+.store-details-page {
+  width: 100%;
+}
+
+.store-back-button {
+  margin-left: 10px;
+}
+
+.store-details-map {
+  width: 100%;
+  height: 500px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.store-detail-leaflet-map {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+}
+
+.store-details-page .store-details-panel {
+  margin-bottom: 24px;
+}
+
+.store-details-page .store-details-note {
+  line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+
+  .store-details-map {
+    height: 400px;
+  }
+
+  .store-detail-leaflet-map {
+    min-height: 400px;
+  }
+
+  .store-back-button {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+
+}

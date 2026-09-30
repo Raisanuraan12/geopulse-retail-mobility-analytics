@@ -1,5 +1,11 @@
 import API_BASE_URL from "../services/api";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState
+} from "react";
+import { useNavigate } from "react-router-dom";
 
 const STORE_API_URL =
   `${API_BASE_URL}/snowflake/stores?limit=1000`;
@@ -66,6 +72,8 @@ function calculateDistanceMeters(
 
 function Stores() {
 
+  const navigate = useNavigate();
+
   const [stores, setStores] =
     useState([]);
 
@@ -80,9 +88,6 @@ function Stores() {
 
   const [error, setError] =
     useState("");
-
-  const [selectedStore, setSelectedStore] =
-    useState(null);
 
 
   // Fetch store data
@@ -186,13 +191,28 @@ function Stores() {
         }
 
         return data.points.filter(
-          (point) =>
-            Number.isFinite(
-              Number(point.latitude)
-            ) &&
-            Number.isFinite(
-              Number(point.longitude)
-            )
+          (point) => {
+
+            const latitude =
+              Number(
+                point.latitude
+              );
+
+            const longitude =
+              Number(
+                point.longitude
+              );
+
+            return (
+              Number.isFinite(latitude) &&
+              Number.isFinite(longitude) &&
+              latitude >= -90 &&
+              latitude <= 90 &&
+              longitude >= -180 &&
+              longitude <= 180
+            );
+
+          }
         );
 
       },
@@ -221,13 +241,13 @@ function Stores() {
           ]);
 
 
-          setStores(storeData);
+          setStores(
+            storeData
+          );
 
           setMobilityPoints(
             mobilityData
           );
-
-          setSelectedStore(null);
 
         } catch (err) {
 
@@ -254,14 +274,14 @@ function Stores() {
 
           setMobilityPoints([]);
 
-          setSelectedStore(null);
-
         } finally {
 
           if (
             !signal?.aborted
           ) {
+
             setLoading(false);
+
           }
 
         }
@@ -288,7 +308,9 @@ function Stores() {
       controller.abort();
     };
 
-  }, [fetchStorePerformance]);
+  }, [
+    fetchStorePerformance
+  ]);
 
 
   // Search stores
@@ -398,8 +420,10 @@ function Stores() {
 
           return {
             ...store,
+
             nearbyGpsActivity:
               nearbyCount,
+
             mapped: true
           };
 
@@ -470,7 +494,9 @@ function Stores() {
         value === undefined ||
         value === ""
       ) {
+
         return "N/A";
+
       }
 
       const number =
@@ -896,8 +922,12 @@ function Stores() {
                           <button
                             className="store-view-button"
                             onClick={() =>
-                              setSelectedStore(
-                                store
+                              navigate(
+                                `/store-details/${encodeURIComponent(
+                                  String(
+                                    store.store_id
+                                  )
+                                )}`
                               )
                             }
                           >
@@ -921,143 +951,6 @@ function Stores() {
 
       </div>
 
-
-      {/* Selected Store Details */}
-
-      {selectedStore && (
-
-        <div className="store-details-panel">
-
-          <div className="store-details-header">
-
-            <div>
-
-              <h3>
-                {selectedStore.store_name}
-              </h3>
-
-              <p>
-                Store Performance Information
-              </p>
-
-            </div>
-
-
-            <button
-              className="store-details-close"
-              onClick={() =>
-                setSelectedStore(null)
-              }
-              aria-label="Close store details"
-            >
-              ×
-            </button>
-
-          </div>
-
-
-          <div className="store-details-grid">
-
-
-            <div>
-
-              <span>
-                Store ID
-              </span>
-
-              <strong>
-                {selectedStore.store_id}
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Store Name
-              </span>
-
-              <strong>
-                {selectedStore.store_name}
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Latitude
-              </span>
-
-              <strong>
-                {formatCoordinate(
-                  selectedStore.latitude
-                )}
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Longitude
-              </span>
-
-              <strong>
-                {formatCoordinate(
-                  selectedStore.longitude
-                )}
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Analysis Radius
-              </span>
-
-              <strong>
-                500 meters
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Nearby GPS Activity
-              </span>
-
-              <strong>
-                {
-                  selectedStore.nearbyGpsActivity
-                }
-              </strong>
-
-            </div>
-
-          </div>
-
-
-          <p className="store-details-note">
-
-            Nearby GPS Activity represents mobility
-            GPS points located within 500 meters
-            of this store. It is an analytics-derived
-            mobility metric and is not an exact
-            visitor count.
-
-          </p>
-
-        </div>
-
-      )}
 
     </div>
 
