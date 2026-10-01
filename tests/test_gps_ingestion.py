@@ -146,3 +146,33 @@ class TestSaveAsJson:
             assert loaded == records
         finally:
             os.unlink(tmppath)
+
+
+# Week 4 Day 1 - Airflow ingestion compatibility tests
+
+def test_loads_geopulse_four_column_dataset(tmp_path):
+    csv_file = tmp_path / "gps.csv"
+
+    csv_file.write_text(
+        "device_id,latitude,longitude,timestamp\n"
+        "DEV-001,18.611205,73.910369,2026-09-08 00:00:03\n",
+        encoding="utf-8",
+    )
+
+    records = load_gps_csv(str(csv_file))
+
+    assert len(records) == 1
+    assert records[0]["device_id"] == "DEV-001"
+    assert records[0]["latitude"] == 18.611205
+    assert "accuracy_meters" not in records[0]
+
+
+def test_save_json_creates_missing_directory(tmp_path):
+    output_file = tmp_path / "validated" / "gps.json"
+
+    save_as_json([{"device_id": "DEV-001"}], str(output_file))
+
+    assert output_file.exists()
+
+    with output_file.open(encoding="utf-8") as f:
+        assert json.load(f)[0]["device_id"] == "DEV-001"
