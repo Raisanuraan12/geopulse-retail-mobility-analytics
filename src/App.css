@@ -2144,3 +2144,200 @@
     min-width: 0;
   }
 }
+/* ============================= */
+/* DAY 24 - DASHBOARD INTEGRATION */
+/* ============================= */
+
+.dashboard-page {
+  width: 100%;
+}
+
+.dashboard-error {
+  margin: 0 0 24px;
+  padding: 16px 18px;
+  border: 1px solid #fecdd3;
+  border-radius: 9px;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.dashboard-error strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.dashboard-error p {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.6fr)
+    minmax(300px, 1fr);
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.dashboard-panel {
+  min-width: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.dashboard-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dashboard-panel-header h2 {
+  margin: 0 0 5px;
+  color: #1f2937;
+  font-size: 18px;
+}
+
+.dashboard-panel-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.dashboard-chart {
+  width: 100%;
+  height: 350px;
+  padding: 15px 5px 10px;
+  box-sizing: border-box;
+}
+
+.dashboard-store-list {
+  padding: 8px 20px 16px;
+}
+
+.dashboard-store-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dashboard-store-row:last-child {
+  border-bottom: none;
+}
+
+.dashboard-store-row > div {
+  min-width: 0;
+}
+
+.dashboard-store-row strong {
+  display: block;
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.dashboard-store-row small {
+  display: block;
+  margin-top: 4px;
+  color: #9ca3af;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.store-rank {
+  display: inline-block;
+  margin-right: 8px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dashboard-empty {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #6b7280;
+  font-size: 13px;
+  text-align: center;
+}
+
+.dashboard-insights {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.insight-card {
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.insight-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.insight-card strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #1f2937;
+  font-size: 18px;
+}
+
+.insight-card p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.dashboard-note {
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-insights {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-chart {
+    height: 300px;
+  }
+
+  .dashboard-panel-header {
+    padding: 16px;
+  }
+
+  .dashboard-store-list {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
