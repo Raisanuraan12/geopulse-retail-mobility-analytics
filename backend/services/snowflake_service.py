@@ -15,6 +15,7 @@ def get_snowflake_connection():
         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
         database=os.getenv("SNOWFLAKE_DATABASE"),
         schema=os.getenv("SNOWFLAKE_SCHEMA"),
+        role=os.getenv("SNOWFLAKE_ROLE"),
     )
 
 
@@ -157,6 +158,38 @@ def get_snowflake_footfall_visits():
             }
             for row in rows
         ]
+
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_snowflake_hourly_footfall(limit=5):
+    """Read aggregated hourly footfall from Noor's secure Snowflake view."""
+    limit = max(1, min(int(limit), 100))
+
+    view_name = os.getenv("SNOWFLAKE_TARGET_VIEW", "api_v_hourly_footfall")
+
+    # Only allow the approved secure view.
+    if view_name.lower() != "api_v_hourly_footfall":
+        raise ValueError("Unapproved Snowflake view configured")
+
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT *
+            FROM GEOPULSE_DB.DBT_RAISA.api_v_hourly_footfall
+            LIMIT %s
+            """,
+            (limit,),
+        )
+
+        columns = [column[0].lower() for column in cursor.description]
+        rows = cursor.fetchall()
+
+        return [dict(zip(columns, row)) for row in rows]
 
     finally:
         cursor.close()
