@@ -1,0 +1,42 @@
+-- ==========================================
+-- GeoPulse: Snowflake Environment Setup
+-- ==========================================
+
+USE ROLE ACCOUNTADMIN;
+
+-- 1. Create Compute Warehouse
+CREATE OR REPLACE WAREHOUSE GEOPULSE_WH
+  WITH WAREHOUSE_SIZE = 'XSMALL'
+  AUTO_SUSPEND = 60
+  AUTO_RESUME = TRUE
+  INITIALLY_SUSPENDED = TRUE;
+
+-- 2. Create Database
+CREATE OR REPLACE DATABASE GEOPULSE_DB;
+
+-- 3. Create Schemas for raw data and dbt models
+CREATE OR REPLACE SCHEMA GEOPULSE_DB.RAW;
+CREATE OR REPLACE SCHEMA GEOPULSE_DB.ANALYTICS;
+
+-- 4. Create Developer Role
+CREATE OR REPLACE ROLE GEOPULSE_DEV;
+
+-- 5. Grant Privileges to the Developer Role
+GRANT USAGE ON WAREHOUSE GEOPULSE_WH TO ROLE GEOPULSE_DEV;
+GRANT USAGE ON DATABASE GEOPULSE_DB TO ROLE GEOPULSE_DEV;
+GRANT USAGE, CREATE TABLE, CREATE STAGE, CREATE FILE FORMAT ON SCHEMA GEOPULSE_DB.RAW TO ROLE GEOPULSE_DEV;
+GRANT ALL PRIVILEGES ON SCHEMA GEOPULSE_DB.ANALYTICS TO ROLE GEOPULSE_DEV;
+
+-- ==========================================
+-- CSV File Format Configuration
+-- ==========================================
+USE ROLE GEOPULSE_DEV;
+USE SCHEMA GEOPULSE_DB.RAW;
+
+-- 6. Create standard CSV format
+CREATE OR REPLACE FILE FORMAT RAW.CSV_FORMAT
+    TYPE = 'CSV'
+    FIELD_DELIMITER = ','
+    SKIP_HEADER = 1
+    NULL_IF = ('NULL', 'null', '')
+    ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE;

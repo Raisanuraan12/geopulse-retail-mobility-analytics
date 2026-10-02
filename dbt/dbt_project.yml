@@ -1,0 +1,23 @@
+name: 'geopulse'
+version: '1.0.0'
+config-version: 2
+
+# This must match the profile name in your profiles.yml
+profile: 'geopulse'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  geopulse:
+    # Default materialization for your models
+    +materialized: view

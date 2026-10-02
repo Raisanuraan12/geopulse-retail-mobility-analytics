@@ -85,13 +85,44 @@ function formatDistance(distance) {
 }
 
 
+import API_BASE_URL from "../services/api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip
+} from "recharts";
+
+
+const CANNIBALIZATION_API_URL =
+  `${API_BASE_URL}/snowflake/cannibalization?radius_km=1&min_overlap_pct=5`;
+
+
+// Format distance
+function formatDistance(distance) {
+  if (distance === null) {
+    return "N/A";
+  }
+
+  if (distance < 1000) {
+    return `${Math.round(distance)} m`;
+  }
+
+  return `${(distance / 1000).toFixed(2)} km`;
+}
+
+
 function Cannibalization() {
 
   const [stores, setStores] =
     useState([]);
 
-  const [mobilityPoints, setMobilityPoints] =
-    useState([]);
+  const [cannibalizationPairs, setCannibalizationPairs] =
+  useState([]);
 
   const [searchTerm, setSearchTerm] =
     useState("");
@@ -163,20 +194,20 @@ function Cannibalization() {
   );
 
 
-  // Fetch mobility points
-  const fetchMobilityPoints =
+    // Fetch backend cannibalization analysis
+  const fetchCannibalizationPairs =
     useCallback(
       async (signal) => {
 
         const response =
           await fetch(
-            MOBILITY_API_URL,
+            CANNIBALIZATION_API_URL,
             { signal }
           );
 
         if (!response.ok) {
           throw new Error(
-            `Mobility API request failed: HTTP ${response.status}`
+            `Cannibalization API request failed: HTTP ${response.status}`
           );
         }
 
@@ -184,32 +215,15 @@ function Cannibalization() {
           await response.json();
 
         if (
-          !Array.isArray(data.points)
+          data.status !== "success" ||
+          !Array.isArray(data.pairs)
         ) {
           throw new Error(
-            "Invalid response received from the Mobility API."
+            "Invalid response received from the Cannibalization API."
           );
         }
 
-        return data.points.filter(
-          (point) => {
-
-            const latitude =
-              Number(point.latitude);
-
-            const longitude =
-              Number(point.longitude);
-
-            return (
-              Number.isFinite(latitude) &&
-              Number.isFinite(longitude) &&
-              latitude >= -90 &&
-              latitude <= 90 &&
-              longitude >= -180 &&
-              longitude <= 180
-            );
-          }
-        );
+        return data.pairs;
 
       },
       []
@@ -227,16 +241,16 @@ function Cannibalization() {
           setError("");
 
           const [
-            storeData,
-            mobilityData
-          ] = await Promise.all([
-            fetchStores(signal),
-            fetchMobilityPoints(signal)
-          ]);
+  storeData,
+  cannibalizationPairs
+] = await Promise.all([
+  fetchStores(signal),
+  fetchCannibalizationPairs(signal)
+]);
 
-          setStores(storeData);
-          setMobilityPoints(mobilityData);
-          setSelectedPair(null);
+setStores(storeData);
+setCannibalizationPairs(cannibalizationPairs);
+setSelectedPair(null);
 
         } catch (err) {
 
@@ -259,7 +273,7 @@ function Cannibalization() {
           );
 
           setStores([]);
-          setMobilityPoints([]);
+          setCannibalizationPairs([]);
           setSelectedPair(null);
 
         } finally {
@@ -272,8 +286,10 @@ function Cannibalization() {
 
       },
       [
-        fetchStores,
-        fetchMobilityPoints
+        [
+  fetchStores,
+  fetchCannibalizationPairs
+]
       ]
     );
 
@@ -298,155 +314,62 @@ function Cannibalization() {
 
 
   // Create nearby store pairs
-  const storePairs =
+    const storePairs =
     useMemo(() => {
 
-      const pairs = [];
+      const storeMap =
+        new Map(
+          stores.map((store) => [
+            String(store.store_id),
+            store
+          ])
+        );
 
-      for (
-        let i = 0;
-        i < stores.length;
-        i++
-      ) {
+      return cannibalizationPairs.map(
+        (pair) => {
 
-        const storeA =
-          stores[i];
-
-        const latitudeA =
-          Number(storeA.latitude);
-
-        const longitudeA =
-          Number(storeA.longitude);
-
-        if (
-          !Number.isFinite(latitudeA) ||
-          !Number.isFinite(longitudeA)
-        ) {
-          continue;
-        }
-
-
-        for (
-          let j = i + 1;
-          j < stores.length;
-          j++
-        ) {
-
-          const storeB =
-            stores[j];
-
-          const latitudeB =
-            Number(storeB.latitude);
-
-          const longitudeB =
-            Number(storeB.longitude);
-
-          if (
-            !Number.isFinite(latitudeB) ||
-            !Number.isFinite(longitudeB)
-          ) {
-            continue;
-          }
-
-
-          const distance =
-            calculateDistanceMeters(
-              latitudeA,
-              longitudeA,
-              latitudeB,
-              longitudeB
+          const storeA =
+            storeMap.get(
+              String(pair.store_a)
             );
 
+          const storeB =
+            storeMap.get(
+              String(pair.store_b)
+            );
 
-          if (
-            distance === null ||
-            distance >
-              CANNIBALIZATION_RADIUS_METERS
-          ) {
-            continue;
-          }
-
-
-          // Count mobility points near either store
-          let nearbyMobility = 0;
-
-          mobilityPoints.forEach(
-            (point) => {
-
-              const pointLatitude =
-                Number(point.latitude);
-
-              const pointLongitude =
-                Number(point.longitude);
-
-
-              const distanceFromA =
-                calculateDistanceMeters(
-                  latitudeA,
-                  longitudeA,
-                  pointLatitude,
-                  pointLongitude
-                );
-
-
-              const distanceFromB =
-                calculateDistanceMeters(
-                  latitudeB,
-                  longitudeB,
-                  pointLatitude,
-                  pointLongitude
-                );
-
-
-              if (
-                (distanceFromA !== null &&
-                  distanceFromA <=
-                    CANNIBALIZATION_RADIUS_METERS) ||
-                (distanceFromB !== null &&
-                  distanceFromB <=
-                    CANNIBALIZATION_RADIUS_METERS)
-              ) {
-
-                nearbyMobility += 1;
-
-              }
-
-            }
-          );
-
-
-          pairs.push({
-
-            storeAId:
-              storeA.store_id,
-
+          return {
+            storeAId: pair.store_a,
             storeAName:
-              storeA.store_name,
+              storeA?.store_name ??
+              String(pair.store_a),
 
-            storeBId:
-              storeB.store_id,
-
+            storeBId: pair.store_b,
             storeBName:
-              storeB.store_name,
+              storeB?.store_name ??
+              String(pair.store_b),
 
-            distance,
+            distance:
+              Number(pair.distance_km) * 1000,
+            sharedVisitors:
+              Number(pair.shared_visitors) || 0,
 
-            nearbyMobility
+            jaccardIndex:
+              Number(pair.jaccard_index) || 0,
 
-          });
+            overlapPctStoreA:
+              Number(pair.overlap_pct_store_a) || 0,
+
+            overlapPctStoreB:
+              Number(pair.overlap_pct_store_b) || 0
+          };
 
         }
-
-      }
-
-      return pairs.sort(
-        (a, b) =>
-          a.distance - b.distance
       );
 
     }, [
       stores,
-      mobilityPoints
+      cannibalizationPairs
     ]);
 
 
@@ -536,8 +459,8 @@ function Cannibalization() {
                 ).toFixed(2)
               ),
 
-            mobility:
-              pair.nearbyMobility
+            sharedVisitors:
+  pair.sharedVisitors
 
           })
         );
@@ -712,8 +635,8 @@ function Cannibalization() {
                 </h3>
 
                 <p>
-                  Distance and nearby mobility activity
-                  for the closest store relationships.
+                  Distance and shared visitor overlap
+                  for nearby store relationships.
                 </p>
 
               </div>
@@ -764,9 +687,9 @@ function Cannibalization() {
                       }
 
                       return [
-                        value,
-                        "Nearby Mobility"
-                      ];
+  value,
+  "Shared Visitors"
+];
 
                     }}
                     labelFormatter={(
@@ -788,8 +711,8 @@ function Cannibalization() {
                   />
 
                   <Bar
-                    dataKey="mobility"
-                    name="Nearby Mobility"
+  dataKey="sharedVisitors"
+  name="Shared Visitors"
                     fill="#2563eb"
                     radius={[
                       5,
@@ -1006,7 +929,7 @@ function Cannibalization() {
                     </th>
 
                     <th>
-                      Nearby Mobility
+                      Shared Visitors
                     </th>
 
                     <th>
@@ -1070,13 +993,13 @@ function Cannibalization() {
 
                           <strong
                             className={
-                              pair.nearbyMobility > 0
+                              pair.sharedVisitors > 0
                                 ? "store-activity-value"
                                 : "store-activity-zero"
                             }
                           >
                             {
-                              pair.nearbyMobility
+                             pair.sharedVisitors
                             }
                           </strong>
 
@@ -1129,7 +1052,7 @@ function Cannibalization() {
               </h3>
 
               <p>
-                Geographic and mobility analysis
+                Geographic and visitor overlap analysis
               </p>
 
             </div>
@@ -1194,11 +1117,11 @@ function Cannibalization() {
             <div>
 
               <span>
-                Nearby Mobility
+                Shared Visitors
               </span>
 
               <strong>
-                {selectedPair.nearbyMobility}
+                {selectedPair.sharedVisitors}
               </strong>
 
             </div>
@@ -1209,10 +1132,10 @@ function Cannibalization() {
           <p className="store-details-note">
 
             The visualization represents geographic
-            proximity and nearby GPS mobility activity.
-            It does not establish confirmed customer
-            switching, revenue loss, or actual sales
-            cannibalization.
+            proximity and shared visitor overlap between
+            store pairs. It does not establish confirmed
+            customer switching, revenue loss, or actual
+            sales cannibalization.
 
           </p>
 
