@@ -14,6 +14,7 @@ from services.snowflake_service import (
     get_snowflake_mobility_points,
     get_snowflake_stores,
     get_snowflake_footfall_visits,
+    get_snowflake_hourly_footfall,
 )
 
 from src.analytics.footfall_metrics import (
@@ -111,5 +112,26 @@ def snowflake_cannibalization(
         raise HTTPException(
             status_code=503,
             detail=f"Snowflake cannibalization data unavailable: {str(error)}"
+        )
+
+
+@router.get("/hourly-footfall")
+def snowflake_hourly_footfall(
+    limit: int = Query(default=24, ge=1, le=100),
+):
+    try:
+        records = get_snowflake_hourly_footfall(limit=limit)
+
+        return {
+            "status": "success",
+            "source": "snowflake",
+            "count": len(records),
+            "data": records,
+        }
+
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail="Snowflake hourly footfall data unavailable"
         )
     
