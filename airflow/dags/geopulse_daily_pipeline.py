@@ -157,7 +157,7 @@ with DAG(
         task_id="dbt_run_footfall",
         bash_command=(
             "cd /opt/geopulse/dbt && "
-            "dbt run --select fct_footfall_daily --target prod"
+            "dbt run --select fct_footfall_daily fct_hourly_footfall fct_store_cannibalization --target prod"
         ),
     )
 
@@ -165,7 +165,7 @@ with DAG(
         task_id="dbt_test_footfall",
         bash_command=(
             "cd /opt/geopulse/dbt && "
-            "dbt test --select fct_footfall_daily --target prod"
+            "dbt test --select fct_footfall_daily fct_hourly_footfall fct_store_cannibalization --target prod"
         ),
     )
 
