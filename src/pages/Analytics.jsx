@@ -11,7 +11,8 @@ import {
   Tooltip
 } from "recharts";
 
- const API_URL =
+
+const API_URL =
   `${API_BASE_URL}/mobility/points?limit=1000`;
 
 
@@ -19,9 +20,11 @@ function Analytics() {
 
   const [points, setPoints] = useState([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [error, setError] = useState("");
+  const [error, setError] =
+    useState("");
 
 
   // Fetch real mobility data
@@ -34,9 +37,9 @@ function Analytics() {
       setError("");
 
 
-      const response = await fetch(
-        API_URL
-      );
+      const response =
+        await fetch(API_URL);
+
 
       if (!response.ok) {
 
@@ -47,7 +50,8 @@ function Analytics() {
       }
 
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
 
       if (!Array.isArray(data.points)) {
@@ -100,6 +104,7 @@ function Analytics() {
    * 10:00 → 184 pings
    * 11:00 → 210 pings
    */
+
   const hourlyData = useMemo(() => {
 
     const hourlyCounts = {};
@@ -112,15 +117,21 @@ function Analytics() {
       }
 
 
-      const date = new Date(point.timestamp);
+      const date =
+        new Date(point.timestamp);
 
 
-      if (Number.isNaN(date.getTime())) {
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
         return;
       }
 
 
-      const hour = date.getHours();
+      const hour =
+        date.getHours();
 
 
       const label =
@@ -133,13 +144,18 @@ function Analytics() {
     });
 
 
-    return Object.entries(hourlyCounts)
-      .map(([hour, pings]) => ({
-        hour,
-        pings
-      }))
-      .sort((a, b) =>
-        a.hour.localeCompare(b.hour)
+    return Object.entries(
+      hourlyCounts
+    )
+      .map(
+        ([hour, pings]) => ({
+          hour,
+          pings
+        })
+      )
+      .sort(
+        (a, b) =>
+          a.hour.localeCompare(b.hour)
       );
 
   }, [points]);
@@ -148,14 +164,17 @@ function Analytics() {
   // Peak activity hour
   const peakActivity = useMemo(() => {
 
-    if (hourlyData.length === 0) {
+    if (
+      hourlyData.length === 0
+    ) {
       return null;
     }
 
 
     return hourlyData.reduce(
       (highest, current) =>
-        current.pings > highest.pings
+        current.pings >
+        highest.pings
           ? current
           : highest
     );
@@ -166,16 +185,19 @@ function Analytics() {
   // Average activity
   const averageActivity = useMemo(() => {
 
-    if (hourlyData.length === 0) {
+    if (
+      hourlyData.length === 0
+    ) {
       return 0;
     }
 
 
-    const total = hourlyData.reduce(
-      (sum, item) =>
-        sum + item.pings,
-      0
-    );
+    const total =
+      hourlyData.reduce(
+        (sum, item) =>
+          sum + item.pings,
+        0
+      );
 
 
     return Math.round(
@@ -228,6 +250,8 @@ function Analytics() {
       <div className="mobility-stats">
 
 
+        {/* Total GPS Pings */}
+
         <div className="mobility-stat-card">
 
           <span className="mobility-stat-icon">
@@ -252,6 +276,8 @@ function Analytics() {
 
         </div>
 
+
+        {/* Peak Activity */}
 
         <div className="mobility-stat-card">
 
@@ -280,6 +306,8 @@ function Analytics() {
         </div>
 
 
+        {/* Peak GPS Pings */}
+
         <div className="mobility-stat-card">
 
           <span className="mobility-stat-icon">
@@ -306,6 +334,8 @@ function Analytics() {
 
         </div>
 
+
+        {/* Average */}
 
         <div className="mobility-stat-card">
 
@@ -334,32 +364,33 @@ function Analytics() {
       </div>
 
 
-      {/* Error */}
+      {/* API Error */}
 
-      {!loading && error && (
+      {!loading &&
+        error && (
 
-        <div
-          className="analytics-message error"
-        >
-
-          <strong>
-            Analytics API Error
-          </strong>
-
-          <p>
-            {error}
-          </p>
-
-          <button
-            className="store-view-button"
-            onClick={fetchMobilityData}
+          <div
+            className="analytics-message error"
           >
-            Try Again
-          </button>
 
-        </div>
+            <strong>
+              Analytics API Error
+            </strong>
 
-      )}
+            <p>
+              {error}
+            </p>
+
+            <button
+              className="store-view-button"
+              onClick={fetchMobilityData}
+            >
+              Try Again
+            </button>
+
+          </div>
+
+        )}
 
 
       {/* Loading */}
@@ -375,7 +406,8 @@ function Analytics() {
           </h3>
 
           <p>
-            Fetching GPS activity from the backend.
+            Fetching GPS activity from
+            the backend.
           </p>
 
         </div>
@@ -398,8 +430,8 @@ function Analytics() {
             </h3>
 
             <p>
-              No GPS mobility points were returned
-              by the backend.
+              No GPS mobility points were
+              returned by the backend.
             </p>
 
           </div>
@@ -413,10 +445,14 @@ function Analytics() {
         !error &&
         hourlyData.length > 0 && (
 
-          <div className="analytics-chart-card">
+          <div
+            className="analytics-chart-card"
+          >
 
 
-            <div className="analytics-chart-header">
+            <div
+              className="analytics-chart-header"
+            >
 
               <div>
 
@@ -425,7 +461,8 @@ function Analytics() {
                 </h3>
 
                 <p>
-                  GPS ping activity grouped by hour
+                  GPS ping activity grouped
+                  by hour
                 </p>
 
               </div>
@@ -491,18 +528,21 @@ function Analytics() {
 
       {/* Information */}
 
-      <div className="analytics-info-card">
+      <div
+        className="analytics-info-card"
+      >
 
         <h3>
           About This Visualization
         </h3>
 
         <p>
-          This visualization currently uses real
-          mobility GPS points from the GeoPulse
-          backend and groups them by timestamp.
-          GPS ping activity is not treated as an
-          exact visitor count.
+          This visualization currently
+          uses real mobility GPS points
+          from the GeoPulse backend and
+          groups them by timestamp.
+          GPS ping activity is not treated
+          as an exact visitor count.
         </p>
 
       </div>

@@ -13,6 +13,91 @@ import {
 const STORE_API_URL =
   `${API_BASE_URL}/snowflake/stores?limit=1000`;
 
+const MOBILITY_API_URL =
+  `${API_BASE_URL}/mobility/points?limit=1000`;
+
+const CANNIBALIZATION_RADIUS_METERS = 1000;
+
+
+// Calculate distance between two GPS coordinates
+function calculateDistanceMeters(
+  latitude1,
+  longitude1,
+  latitude2,
+  longitude2
+) {
+  const earthRadius = 6371000;
+
+  const lat1 = Number(latitude1);
+  const lon1 = Number(longitude1);
+  const lat2 = Number(latitude2);
+  const lon2 = Number(longitude2);
+
+  if (
+    !Number.isFinite(lat1) ||
+    !Number.isFinite(lon1) ||
+    !Number.isFinite(lat2) ||
+    !Number.isFinite(lon2)
+  ) {
+    return null;
+  }
+
+  const toRadians = (value) =>
+    (value * Math.PI) / 180;
+
+  const lat1Rad = toRadians(lat1);
+  const lat2Rad = toRadians(lat2);
+
+  const deltaLat =
+    toRadians(lat2 - lat1);
+
+  const deltaLon =
+    toRadians(lon2 - lon1);
+
+  const a =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(lat1Rad) *
+      Math.cos(lat2Rad) *
+      Math.sin(deltaLon / 2) ** 2;
+
+  const c =
+    2 *
+    Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
+    );
+
+  return earthRadius * c;
+}
+
+
+// Format distance
+function formatDistance(distance) {
+  if (distance === null) {
+    return "N/A";
+  }
+
+  if (distance < 1000) {
+    return `${Math.round(distance)} m`;
+  }
+
+  return `${(distance / 1000).toFixed(2)} km`;
+}
+
+
+import API_BASE_URL from "../services/api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip
+} from "recharts";
+
+
 const CANNIBALIZATION_API_URL =
   `${API_BASE_URL}/snowflake/cannibalization?radius_km=1&min_overlap_pct=5`;
 

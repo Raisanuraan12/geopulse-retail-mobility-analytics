@@ -1,570 +1,1011 @@
-import API_BASE_URL from "../services/api";
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 
 import {
   MapContainer,
   TileLayer,
   Marker,
   Popup,
+  Circle,
   useMap
 } from "react-leaflet";
 
+import L from "leaflet";
+
+import API_BASE_URL from "../services/api";
+
 import "leaflet/dist/leaflet.css";
 
-import L from "leaflet";
-delete L.Icon.Default.prototype._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png"
-});
-// Backend API
-const API_URL =
+const MOBILITY_API_URL =
   `${API_BASE_URL}/mobility/points?limit=1000`;
 
+const STORE_API_URL =
+  `${API_BASE_URL}/snowflake/stores?limit=1000`;
 
-// Automatically fit map to real GPS points
-function MapBounds({ points }) {
+const DEFAULT_CENTER = [20.5937, 78.9629];
 
+const storeIcon = L.divIcon({
+  className: "geopulse-store-marker",
+  html: `
+    <div class="store-marker-pin">
+      S
+    </div>
+  `,
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -30]
+});
+
+const gpsIcon = L.divIcon({
+  className: "geopulse-gps-marker",
+  html: `
+    <div class="gps-marker-dot"></div>
+  `,
+  iconSize: [12, 12],
+  iconAnchor: [6, 6]
+});
+
+function MapBounds({
+  points,
+  stores,
+  showPoints,
+  showStores,
+  skipFit
+}) {
   const map = useMap();
 
   useEffect(() => {
-
-    if (!points || points.length === 0) {
+    if (skipFit) {
       return;
     }
 
-    const bounds = L.latLngBounds(
-      points.map((point) => [
-        Number(point.latitude),
-        Number(point.longitude)
-      ])
-    );
+    const coordinates = [];
 
-    map.fitBounds(bounds, {
-      padding: [40, 40]
-    });
+    if (showPoints) {
+      points.forEach((point) => {
+        coordinates.push([
+          point.latitude,
+          point.longitude
+        ]);
+      });
+    }
 
-  }, [points, map]);
+    if (showStores) {
+      stores.forEach((store) => {
+        coordinates.push([
+          store.latitude,
+          store.longitude
+        ]);
+      });
+    }
+
+    if (coordinates.length === 0) {
+      return;
+    }
+
+    const bounds = L.latLngBounds(coordinates);
+
+    if (coordinates.length === 1) {
+      map.setView(coordinates[0], 14);
+    } else {
+      map.fitBounds(bounds, {
+        padding: [40, 40]
+      });
+    }
+  }, [
+    map,
+    points,
+    stores,
+    showPoints,
+    showStores,
+    skipFit
+  ]);
 
   return null;
 }
 
+function MapSearchController({
+  selectedPoint,
+  selectedStore,
+  selectedMarkerRef,
+  selectedStoreRef
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!selectedPoint) {
+      return;
+    }
+
+    map.flyTo(
+      [
+        selectedPoint.latitude,
+        selectedPoint.longitude
+      ],
+      17,
+      {
+        duration: 1.2
+      }
+    );
+
+    setTimeout(() => {
+      if (selectedMarkerRef.current) {
+        selectedMarkerRef.current.openPopup();
+      }
+    }, 1300);
+  }, [
+    selectedPoint,
+    selectedMarkerRef,
+    map
+  ]);
+
+  useEffect(() => {
+    if (!selectedStore) {
+      return;
+    }
+
+    map.flyTo(
+      [
+        selectedStore.latitude,
+        selectedStore.longitude
+      ],
+      16,
+      {
+        duration: 1.2
+      }
+    );
+
+    setTimeout(() => {
+      if (selectedStoreRef.current) {
+        selectedStoreRef.current.openPopup();
+      }
+    }, 1300);
+  }, [
+    selectedStore,
+    selectedStoreRef,
+    map
+  ]);
+
+  return null;
+}
 
 function MobilityMap() {
-
   const [points, setPoints] = useState([]);
+  const [stores, setStores] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [storesLoading, setStoresLoading] = useState(true);
 
   const [error, setError] = useState("");
+  const [storesError, setStoresError] = useState("");
 
+  const [timeFilter, setTimeFilter] =
+    useState("all");
 
-  // Fetch real mobility data
+  const [deviceSearch, setDeviceSearch] =
+    useState("");
+
+  const [mapSearch, setMapSearch] =
+    useState("");
+
+  const [selectedPoint, setSelectedPoint] =
+    useState(null);
+
+  const [selectedStore, setSelectedStore] =
+    useState(null);
+
+  const [searchMessage, setSearchMessage] =
+    useState("");
+
+  const [showPoints, setShowPoints] =
+    useState(true);
+
+  const [showStores, setShowStores] =
+    useState(true);
+
+  const selectedMarkerRef =
+    useRef(null);
+
+  const selectedStoreRef =
+    useRef(null);
+
   const fetchMobilityPoints = async () => {
-
     try {
-
       setLoading(true);
-
       setError("");
 
-
-      const response = await fetch(API_URL);
-
+      const response = await fetch(
+        MOBILITY_API_URL
+      );
 
       if (!response.ok) {
-
         throw new Error(
-          `API request failed with status ${response.status}`
+          `Mobility API error: ${response.status}`
         );
-
       }
-
 
       const data = await response.json();
 
-
-      // Backend response:
-      // {
-      //   status: "success",
-      //   count: 5,
-      //   points: [...]
-      // }
-
-      if (!Array.isArray(data.points)) {
-
+      if (
+        data.status !== "success" ||
+        !Array.isArray(data.points)
+      ) {
         throw new Error(
-          "Invalid mobility API response: points array not found."
+          "Invalid mobility API response."
         );
-
       }
 
+      const validPoints =
+        data.points.filter(
+          (point) =>
+            Number.isFinite(
+              Number(point.latitude)
+            ) &&
+            Number.isFinite(
+              Number(point.longitude)
+            )
+        );
 
-      // Keep only valid GPS points
-      const validPoints = data.points.filter(
-        (point) =>
-          point &&
-          Number.isFinite(Number(point.latitude)) &&
-          Number.isFinite(Number(point.longitude))
+      setPoints(
+        validPoints.map((point) => ({
+          ...point,
+          latitude: Number(point.latitude),
+          longitude: Number(point.longitude)
+        }))
       );
-
-
-      setPoints(validPoints);
-
     } catch (err) {
-
-      console.error(
-        "Mobility Points API Error:",
-        err
-      );
-
       setError(
-        "Unable to load mobility points from the backend."
+        err.message ||
+        "Failed to load mobility data."
       );
-
-      setPoints([]);
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
+  const fetchStores = async () => {
+    try {
+      setStoresLoading(true);
+      setStoresError("");
 
-  // Load mobility points when page opens
+      const response = await fetch(
+        STORE_API_URL
+      );
+
+      if (!response.ok) {
+        if (response.status === 503) {
+          throw new Error(
+            "Store API is unavailable. Snowflake data is currently not configured."
+          );
+        }
+
+        throw new Error(
+          `Store API error: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      if (
+        data.status !== "success" ||
+        !Array.isArray(data.stores)
+      ) {
+        throw new Error(
+          "Invalid store API response."
+        );
+      }
+
+      const validStores =
+        data.stores.filter(
+          (store) =>
+            Number.isFinite(
+              Number(store.latitude)
+            ) &&
+            Number.isFinite(
+              Number(store.longitude)
+            )
+        );
+
+      setStores(
+        validStores.map((store) => ({
+          ...store,
+          latitude: Number(store.latitude),
+          longitude: Number(store.longitude)
+        }))
+      );
+    } catch (err) {
+      setStoresError(
+        err.message ||
+        "Failed to load store data."
+      );
+    } finally {
+      setStoresLoading(false);
+    }
+  };
+
+  const fetchMapData = async () => {
+    await Promise.all([
+      fetchMobilityPoints(),
+      fetchStores()
+    ]);
+  };
+
   useEffect(() => {
-
-    fetchMobilityPoints();
-
+    fetchMapData();
   }, []);
 
+  const filteredPoints = useMemo(() => {
+    let result = [...points];
 
-  // Use first real GPS point as initial map center
-  const mapCenter =
-    points.length > 0
-      ? [
-          Number(points[0].latitude),
-          Number(points[0].longitude)
-        ]
-      : null;
+    const now = new Date();
 
+    if (timeFilter !== "all") {
+      result = result.filter((point) => {
+        const pointDate =
+          new Date(point.timestamp);
+
+        if (
+          Number.isNaN(pointDate.getTime())
+        ) {
+          return false;
+        }
+
+        const diffHours =
+          (now - pointDate) /
+          (1000 * 60 * 60);
+
+        if (timeFilter === "today") {
+          return (
+            pointDate.toDateString() ===
+            now.toDateString()
+          );
+        }
+
+        if (timeFilter === "24h") {
+          return diffHours >= 0 &&
+            diffHours <= 24;
+        }
+
+        if (timeFilter === "7d") {
+          return diffHours >= 0 &&
+            diffHours <= 168;
+        }
+
+        return true;
+      });
+    }
+
+    if (deviceSearch.trim()) {
+      const query =
+        deviceSearch.trim().toLowerCase();
+
+      result = result.filter((point) =>
+        String(point.device_id)
+          .toLowerCase()
+          .includes(query)
+      );
+    }
+
+    return result;
+  }, [
+    points,
+    timeFilter,
+    deviceSearch
+  ]);
+
+  const handleMapSearch = () => {
+    const query =
+      mapSearch.trim().toLowerCase();
+
+    if (!query) {
+      setSearchMessage(
+        "Enter a Device ID, Store ID, Store Name, latitude, or longitude."
+      );
+      return;
+    }
+
+    const mobilityMatch =
+      filteredPoints.find((point) => {
+        const deviceId =
+          String(point.device_id)
+            .toLowerCase();
+
+        const latitude =
+          String(point.latitude);
+
+        const longitude =
+          String(point.longitude);
+
+        return (
+          deviceId.includes(query) ||
+          latitude.includes(query) ||
+          longitude.includes(query)
+        );
+      });
+
+    if (mobilityMatch) {
+      setSelectedStore(null);
+      setSelectedPoint(mobilityMatch);
+
+      setSearchMessage(
+        `GPS point found for device ${mobilityMatch.device_id}.`
+      );
+
+      return;
+    }
+
+    const storeMatch =
+      stores.find((store) => {
+        const storeId =
+          String(store.store_id)
+            .toLowerCase();
+
+        const storeName =
+          String(store.store_name)
+            .toLowerCase();
+
+        const latitude =
+          String(store.latitude);
+
+        const longitude =
+          String(store.longitude);
+
+        return (
+          storeId.includes(query) ||
+          storeName.includes(query) ||
+          latitude.includes(query) ||
+          longitude.includes(query)
+        );
+      });
+
+    if (storeMatch) {
+      setSelectedPoint(null);
+      setSelectedStore(storeMatch);
+
+      setSearchMessage(
+        `Store found: ${storeMatch.store_name}.`
+      );
+
+      return;
+    }
+
+    setSelectedPoint(null);
+    setSelectedStore(null);
+
+    setSearchMessage(
+      "No matching GPS point or store was found."
+    );
+  };
+
+  const clearMapSearch = () => {
+    setMapSearch("");
+    setSelectedPoint(null);
+    setSelectedStore(null);
+    setSearchMessage("");
+  };
+
+  const resetFilters = () => {
+    setTimeFilter("all");
+    setDeviceSearch("");
+    clearMapSearch();
+  };
+
+  const mobilityStatus =
+    loading
+      ? "Loading..."
+      : error
+      ? "Unavailable"
+      : `${filteredPoints.length} visible`;
+
+  const storeStatus =
+    storesLoading
+      ? "Loading..."
+      : storesError
+      ? "Unavailable"
+      : `${stores.length} stores`;
 
   return (
-    <div className="mobility-page">
+    <div className="mobility-map-page">
 
-      {/* Page Introduction */}
-
-      <div className="page-intro">
-
+      <div className="page-header">
         <div>
-
-          <h2>Mobility Map</h2>
-
+          <h1>Mobility Map</h1>
           <p>
-            Explore hyper-local mobility patterns, foot traffic,
-            and high-traffic retail zones.
+            Explore real mobility GPS points
+            and store locations.
           </p>
-
         </div>
-
 
         <button
-          className="map-button"
-          onClick={fetchMobilityPoints}
-          disabled={loading}
+          className="refresh-button"
+          onClick={fetchMapData}
+          disabled={
+            loading ||
+            storesLoading
+          }
         >
-
-          {loading ? "Loading..." : "Refresh Map"}
-
+          {loading || storesLoading
+            ? "Refreshing..."
+            : "Refresh Map"}
         </button>
-
       </div>
 
+      <div className="stats-grid">
 
-      {/* Mobility Statistics */}
-
-      <div className="mobility-stats">
-
-        <div className="mobility-stat-card">
-
-          <span className="mobility-stat-icon">
-            ⌖
-          </span>
-
-          <div>
-
-            <p>Total GPS Pings</p>
-
-            <h3>
-              {loading ? "--" : points.length}
-            </h3>
-
-          </div>
-
+        <div className="stat-card">
+          <span>Total GPS Pings</span>
+          <strong>
+            {points.length}
+          </strong>
         </div>
 
-
-        <div className="mobility-stat-card">
-
-          <span className="mobility-stat-icon">
-            ◉
-          </span>
-
-          <div>
-
-            <p>Active Zones</p>
-
-            <h3>
-              --
-            </h3>
-
-          </div>
-
+        <div className="stat-card">
+          <span>Visible GPS Points</span>
+          <strong>
+            {filteredPoints.length}
+          </strong>
         </div>
 
-
-        <div className="mobility-stat-card">
-
-          <span className="mobility-stat-icon">
-            ↑
-          </span>
-
-          <div>
-
-            <p>High Traffic Zones</p>
-
-            <h3>
-              --
-            </h3>
-
-          </div>
-
+        <div className="stat-card">
+          <span>Stores</span>
+          <strong>
+            {stores.length}
+          </strong>
         </div>
 
-
-        <div className="mobility-stat-card">
-
-          <span className="mobility-stat-icon">
-            ▤
-          </span>
-
-          <div>
-
-            <p>Nearby Stores</p>
-
-            <h3>
-              --
-            </h3>
-
-          </div>
-
+        <div className="stat-card">
+          <span>Map Status</span>
+          <strong>
+            {loading ||
+            storesLoading
+              ? "Loading"
+              : "Ready"}
+          </strong>
         </div>
 
       </div>
 
+      <div className="map-section">
 
-      {/* Map Card */}
-
-      <div className="map-card">
-
-        <div className="map-card-header">
-
+        <div className="section-header">
           <div>
-
-            <h3>
-              Retail Mobility Overview
-            </h3>
+            <h2>
+              Advanced Mobility Map
+            </h2>
 
             <p>
-              Interactive visualization of mobility activity
-              and retail locations
+              GPS mobility activity and
+              retail store locations.
             </p>
-
           </div>
 
+          <div className="map-layer-controls">
 
-          <div className="map-status">
+            <label className="layer-toggle">
+              <input
+                type="checkbox"
+                checked={showPoints}
+                onChange={(event) => {
+                  setShowPoints(
+                    event.target.checked
+                  );
+                  setSelectedPoint(null);
+                }}
+              />
 
-            <span className="status-dot"></span>
+              <span>
+                GPS Points
+              </span>
+            </label>
 
-            {loading
-              ? "Loading Map"
-              : error
-              ? "API Error"
-              : "Live Map"}
+            <label className="layer-toggle">
+              <input
+                type="checkbox"
+                checked={showStores}
+                onChange={(event) => {
+                  setShowStores(
+                    event.target.checked
+                  );
+                  setSelectedStore(null);
+                }}
+              />
+
+              <span>
+                Stores
+              </span>
+            </label>
 
           </div>
+        </div>
+
+        <div className="map-filters">
+
+          <div className="filter-group">
+            <label>
+              Time Range
+            </label>
+
+            <select
+              value={timeFilter}
+              onChange={(event) =>
+                setTimeFilter(
+                  event.target.value
+                )
+              }
+            >
+              <option value="all">
+                All Points
+              </option>
+
+              <option value="today">
+                Today
+              </option>
+
+              <option value="24h">
+                Last 24 Hours
+              </option>
+
+              <option value="7d">
+                Last 7 Days
+              </option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>
+              Device ID
+            </label>
+
+            <input
+              type="text"
+              value={deviceSearch}
+              onChange={(event) =>
+                setDeviceSearch(
+                  event.target.value
+                )
+              }
+              placeholder="Search Device ID"
+            />
+          </div>
+
+          <div className="filter-group map-search-group">
+            <label>
+              Map Search
+            </label>
+
+            <div className="map-search-box">
+
+              <input
+                type="text"
+                value={mapSearch}
+                onChange={(event) =>
+                  setMapSearch(
+                    event.target.value
+                  )
+                }
+                onKeyDown={(event) => {
+                  if (
+                    event.key === "Enter"
+                  ) {
+                    handleMapSearch();
+                  }
+                }}
+                placeholder="Device, Store ID, Store Name..."
+              />
+
+              <button
+                className="map-search-button"
+                onClick={handleMapSearch}
+              >
+                Search
+              </button>
+
+              <button
+                className="map-search-clear"
+                onClick={clearMapSearch}
+                aria-label="Clear map search"
+              >
+                ×
+              </button>
+
+            </div>
+          </div>
+
+          <button
+            className="filter-reset-button"
+            onClick={resetFilters}
+          >
+            Reset
+          </button>
 
         </div>
 
-
-        {/* API Error */}
+        {searchMessage && (
+          <div className="map-search-message">
+            {searchMessage}
+          </div>
+        )}
 
         {error && (
-
-          <div
-            style={{
-              padding: "15px",
-              margin: "15px",
-              borderRadius: "8px",
-              background: "#fff1f2",
-              border: "1px solid #fecdd3",
-              color: "#be123c"
-            }}
-          >
-
+          <div className="map-error">
             <strong>
-              Mobility API Error
+              Mobility data unavailable
             </strong>
 
-            <p style={{ marginTop: "5px" }}>
+            <p>
               {error}
             </p>
 
+            <button
+              className="retry-button"
+              onClick={fetchMobilityPoints}
+            >
+              Retry Mobility
+            </button>
           </div>
-
         )}
 
+        {storesError && (
+          <div className="map-error">
+            <strong>
+              Store data unavailable
+            </strong>
 
-        {/* Interactive Map */}
+            <p>
+              {storesError}
+            </p>
+
+            <button
+              className="retry-button"
+              onClick={fetchStores}
+            >
+              Retry Stores
+            </button>
+          </div>
+        )}
+
+        <div className="map-status-bar">
+          <span>
+            GPS: {mobilityStatus}
+          </span>
+
+          <span>
+            Stores: {storeStatus}
+          </span>
+        </div>
 
         <div className="mobility-map">
 
-          {/* Loading State */}
-
-          {loading && (
-
-            <div
-              style={{
-                height: "100%",
-                minHeight: "500px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#f8fafc"
-              }}
+          {(loading || storesLoading) &&
+            points.length === 0 &&
+            stores.length === 0 ? (
+            <div className="map-loading">
+              Loading map data...
+            </div>
+          ) : (
+            <MapContainer
+              center={DEFAULT_CENTER}
+              zoom={5}
+              scrollWheelZoom={true}
+              className="leaflet-map"
             >
 
-              <div style={{ textAlign: "center" }}>
+              <TileLayer
+                attribution='&copy; OpenStreetMap contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
 
-                <h3>
-                  Loading Mobility Data...
-                </h3>
+              <MapBounds
+                points={filteredPoints}
+                stores={stores}
+                showPoints={showPoints}
+                showStores={showStores}
+                skipFit={
+                  Boolean(
+                    selectedPoint ||
+                    selectedStore
+                  )
+                }
+              />
 
-                <p>
-                  Fetching GPS points from backend.
-                </p>
+              <MapSearchController
+                selectedPoint={
+                  selectedPoint
+                }
+                selectedStore={
+                  selectedStore
+                }
+                selectedMarkerRef={
+                  selectedMarkerRef
+                }
+                selectedStoreRef={
+                  selectedStoreRef
+                }
+              />
 
-              </div>
+              {showPoints &&
+                filteredPoints.map(
+                  (point, index) => {
 
-            </div>
+                    const isSelected =
+                      selectedPoint ===
+                      point;
 
+                    return (
+                      <Circle
+                        key={
+                          `${point.device_id}-${point.timestamp}-${index}`
+                        }
+                        center={[
+                          point.latitude,
+                          point.longitude
+                        ]}
+                        radius={
+                          isSelected
+                            ? 8
+                            : 5
+                        }
+                        pathOptions={{
+                          fillOpacity:
+                            isSelected
+                              ? 0.9
+                              : 0.65,
+                          opacity: 0.8
+                        }}
+                      />
+                    );
+                  }
+                )}
+
+              {showPoints &&
+                filteredPoints.map(
+                  (point, index) => {
+
+                    if (
+                      selectedPoint !==
+                      point
+                    ) {
+                      return null;
+                    }
+
+                    return (
+                      <Marker
+                        key={`selected-${index}`}
+                        position={[
+                          point.latitude,
+                          point.longitude
+                        ]}
+                        icon={gpsIcon}
+                        ref={
+                          selectedMarkerRef
+                        }
+                      >
+                        <Popup>
+                          <strong>
+                            GPS Mobility Point
+                          </strong>
+
+                          <br />
+
+                          Device ID:{" "}
+                          {point.device_id}
+
+                          <br />
+
+                          Latitude:{" "}
+                          {point.latitude}
+
+                          <br />
+
+                          Longitude:{" "}
+                          {point.longitude}
+
+                          <br />
+
+                          Timestamp:{" "}
+                          {point.timestamp}
+                        </Popup>
+                      </Marker>
+                    );
+                  }
+                )}
+
+              {showStores &&
+                stores.map(
+                  (store) => {
+
+                    const isSelected =
+                      selectedStore ===
+                      store;
+
+                    return (
+                      <Marker
+                        key={String(
+                          store.store_id
+                        )}
+                        position={[
+                          store.latitude,
+                          store.longitude
+                        ]}
+                        icon={storeIcon}
+                        ref={
+                          isSelected
+                            ? selectedStoreRef
+                            : null
+                        }
+                      >
+                        <Popup>
+                          <strong>
+                            {store.store_name}
+                          </strong>
+
+                          <br />
+
+                          Store ID:{" "}
+                          {store.store_id}
+
+                          <br />
+
+                          Latitude:{" "}
+                          {store.latitude}
+
+                          <br />
+
+                          Longitude:{" "}
+                          {store.longitude}
+                        </Popup>
+                      </Marker>
+                    );
+                  }
+                )}
+
+            </MapContainer>
           )}
 
-
-          {/* Empty State */}
-
-          {!loading &&
-            !error &&
-            points.length === 0 && (
-
-              <div
-                style={{
-                  height: "100%",
-                  minHeight: "500px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#f8fafc"
-                }}
-              >
-
-                <div style={{ textAlign: "center" }}>
-
-                  <h3>
-                    No Mobility Points Found
-                  </h3>
-
-                  <p>
-                    The backend returned no GPS points.
-                  </p>
-
-                </div>
-
-              </div>
-
-            )}
-
-
-          {/* Real Leaflet Map */}
-
-          {!loading &&
-            !error &&
-            points.length > 0 &&
-            mapCenter && (
-
-              <MapContainer
-                center={mapCenter}
-                zoom={13}
-                scrollWheelZoom={true}
-                className="leaflet-map"
-              >
-
-                <TileLayer
-                  attribution='&copy; OpenStreetMap contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-
-
-                {/* Automatically fit all GPS points */}
-
-                <MapBounds
-                  points={points}
-                />
-
-
-                {/* Real Backend GPS Points */}
-
-                {points.map((point, index) => (
-
-                  <Marker
-                    key={
-                      `${point.device_id}-${point.timestamp}-${index}`
-                    }
-                    position={[
-                      Number(point.latitude),
-                      Number(point.longitude)
-                    ]}
-                  >
-
-                    <Popup>
-
-                      <strong>
-                        Mobility Point
-                      </strong>
-
-                      <br />
-
-                      <strong>
-                        Device ID:
-                      </strong>{" "}
-                      {point.device_id}
-
-                      <br />
-
-                      <strong>
-                        Latitude:
-                      </strong>{" "}
-                      {point.latitude}
-
-                      <br />
-
-                      <strong>
-                        Longitude:
-                      </strong>{" "}
-                      {point.longitude}
-
-                      <br />
-
-                      <strong>
-                        Timestamp:
-                      </strong>{" "}
-
-                      {point.timestamp
-                        ? new Date(
-                            point.timestamp
-                          ).toLocaleString()
-                        : "N/A"}
-
-                    </Popup>
-
-                  </Marker>
-
-                ))}
-
-              </MapContainer>
-
-            )}
-
-
-          {/* Map Overlay */}
-
-          {!loading &&
-            !error &&
-            points.length > 0 && (
-
-              <div className="map-overlay">
-
-                <strong>
-                  Mobility Analysis Area
-                </strong>
-
-                <span>
-                  {points.length} GPS points loaded
-                </span>
-
-              </div>
-
-            )}
-
-        </div>
-
-
-        {/* Map Legend */}
-
-        <div className="map-legend">
-
-          <h4>
-            Traffic Intensity
-          </h4>
-
-
-          <div className="legend-items">
-
-            <div className="legend-item">
-
-              <span className="legend-dot low"></span>
-
-              Low Traffic
-
-            </div>
-
-
-            <div className="legend-item">
-
-              <span className="legend-dot medium"></span>
-
-              Medium Traffic
-
-            </div>
-
-
-            <div className="legend-item">
-
-              <span className="legend-dot high"></span>
-
-              High Traffic
-
-            </div>
-
+          <div className="map-overlay">
+            <strong>
+              GeoPulse Advanced Map
+            </strong>
+
+            <span>
+              GPS: {filteredPoints.length}
+            </span>
+
+            <span>
+              Stores: {stores.length}
+            </span>
           </div>
 
         </div>
 
-      </div>
+        <div className="map-legend">
 
+          <div className="legend-item">
+            <span className="legend-dot gps-legend"></span>
+            GPS Mobility
+          </div>
+
+          <div className="legend-item">
+            <span className="legend-dot store-legend"></span>
+            Store Location
+          </div>
+
+        </div>
+
+        <div className="map-note">
+          GPS points represent anonymized
+          mobility activity. They should not
+          be interpreted as exact visitor
+          counts.
+        </div>
+
+      </div>
     </div>
   );
 }
-
 
 export default MobilityMap;
