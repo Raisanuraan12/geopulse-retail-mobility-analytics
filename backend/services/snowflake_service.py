@@ -102,7 +102,7 @@ def get_snowflake_stores(limit=100):
                 STORE_NAME,
                 LATITUDE,
                 LONGITUDE
-            FROM RAW.STG_STORE_LOCATIONS
+            FROM GEOPULSE_DB.DBT_RAISA.STG_STORE_LOCATIONS
             ORDER BY STORE_ID
             LIMIT %s
             """,
@@ -190,6 +190,42 @@ def get_snowflake_hourly_footfall(limit=5):
         rows = cursor.fetchall()
 
         return [dict(zip(columns, row)) for row in rows]
+
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_snowflake_cannibalization():
+    """Retrieve precomputed store cannibalization from Noor's approved mart."""
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                EXISTING_STORE_NAME,
+                NEW_STORE_NAME,
+                SHARED_VISITORS_COUNT,
+                TOTAL_EXISTING_CUSTOMERS,
+                CANNIBALIZATION_PERCENTAGE
+            FROM GEOPULSE_DB.DBT_RAISA.FCT_STORE_CANNIBALIZATION
+            ORDER BY CANNIBALIZATION_PERCENTAGE DESC
+            """
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "existing_store_name": row[0],
+                "new_store_name": row[1],
+                "shared_visitors_count": int(row[2]),
+                "total_existing_customers": int(row[3]),
+                "cannibalization_percentage": float(row[4]),
+            }
+            for row in rows
+        ]
 
     finally:
         cursor.close()
