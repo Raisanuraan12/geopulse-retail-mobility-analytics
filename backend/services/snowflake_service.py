@@ -1,0 +1,233 @@
+import os
+
+import snowflake.connector
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def get_snowflake_connection():
+    """Create and return a Snowflake database connection."""
+    return snowflake.connector.connect(
+        account=os.getenv("SNOWFLAKE_ACCOUNT"),
+        user=os.getenv("SNOWFLAKE_USER"),
+        password=os.getenv("SNOWFLAKE_PASSWORD"),
+        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+        database=os.getenv("SNOWFLAKE_DATABASE"),
+        schema=os.getenv("SNOWFLAKE_SCHEMA"),
+        role=os.getenv("SNOWFLAKE_ROLE"),
+    )
+
+
+def test_snowflake_connection():
+    """Test the configured Snowflake connection."""
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                CURRENT_DATABASE(),
+                CURRENT_SCHEMA(),
+                CURRENT_WAREHOUSE()
+            """
+        )
+
+        database, schema, warehouse = cursor.fetchone()
+
+        return {
+            "status": "connected",
+            "database": database,
+            "schema": schema,
+            "warehouse": warehouse,
+        }
+
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def get_snowflake_mobility_points(limit=1000):
+    """Retrieve mobility GPS points from Snowflake."""
+    limit = max(1, min(limit, 5000))
+
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                DEVICE_ID,
+                LATITUDE,
+                LONGITUDE,
+                PING_TIMESTAMP
+            FROM RAW.STG_MOBILITY_PINGS
+            ORDER BY PING_TIMESTAMP
+            LIMIT %s
+            """,
+            (limit,)
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "device_id": row[0],
+                "latitude": row[1],
+                "longitude": row[2],
+                "timestamp": row[3].isoformat() if row[3] else None,
+            }
+            for row in rows
+        ]
+
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def get_snowflake_stores(limit=100):
+    """Retrieve retail store locations from Snowflake."""
+    limit = max(1, min(limit, 1000))
+
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                STORE_ID,
+                STORE_NAME,
+                LATITUDE,
+                LONGITUDE
+            FROM GEOPULSE_DB.DBT_RAISA.STG_STORE_LOCATIONS
+            ORDER BY STORE_ID
+            LIMIT %s
+            """,
+            (limit,)
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "store_id": row[0],
+                "store_name": row[1],
+                "latitude": row[2],
+                "longitude": row[3],
+            }
+            for row in rows
+        ]
+
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_snowflake_footfall_visits():
+    """Retrieve daily store visit records used for cannibalization analysis."""
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                STORE_ID,
+                STORE_NAME,
+                VISIT_DATE,
+                DEVICE_ID,
+                DWELL_MINUTES,
+                VISIT_TYPE
+            FROM FCT_FOOTFALL_DAILY
+            ORDER BY VISIT_DATE, STORE_ID
+            """
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "store_id": row[0],
+                "store_name": row[1],
+                "visit_date": row[2].isoformat() if row[2] else None,
+                "device_id": row[3],
+                "dwell_minutes": float(row[4]) if row[4] is not None else 0.0,
+                "visit_type": row[5],
+            }
+            for row in rows
+        ]
+
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_snowflake_hourly_footfall(limit=5):
+    """Read aggregated hourly footfall from Noor's secure Snowflake view."""
+    limit = max(1, min(int(limit), 100))
+
+    view_name = os.getenv("SNOWFLAKE_TARGET_VIEW", "api_v_hourly_footfall")
+
+    # Only allow the approved secure view.
+    if view_name.lower() != "api_v_hourly_footfall":
+        raise ValueError("Unapproved Snowflake view configured")
+
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT *
+            FROM GEOPULSE_DB.DBT_RAISA.api_v_hourly_footfall
+            LIMIT %s
+            """,
+            (limit,),
+        )
+
+        columns = [column[0].lower() for column in cursor.description]
+        rows = cursor.fetchall()
+
+        return [dict(zip(columns, row)) for row in rows]
+
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_snowflake_cannibalization():
+    """Retrieve precomputed store cannibalization from Noor's approved mart."""
+    connection = get_snowflake_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                EXISTING_STORE_NAME,
+                NEW_STORE_NAME,
+                SHARED_VISITORS_COUNT,
+                TOTAL_EXISTING_CUSTOMERS,
+                CANNIBALIZATION_PERCENTAGE
+            FROM GEOPULSE_DB.DBT_RAISA.FCT_STORE_CANNIBALIZATION
+            ORDER BY CANNIBALIZATION_PERCENTAGE DESC
+            """
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            {
+                "existing_store_name": row[0],
+                "new_store_name": row[1],
+                "shared_visitors_count": int(row[2]),
+                "total_existing_customers": int(row[3]),
+                "cannibalization_percentage": float(row[4]),
+            }
+            for row in rows
+        ]
+
+    finally:
+        cursor.close()
+        connection.close()
+        
