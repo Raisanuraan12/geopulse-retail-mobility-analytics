@@ -13,8 +13,11 @@ from services.snowflake_service import (
     test_snowflake_connection,
     get_snowflake_mobility_points,
     get_snowflake_stores,
-    get_snowflake_footfall_visits,
+    get_snowflake_hourly_footfall,
+    get_snowflake_cannibalization,
+
 )
+
 
 from src.analytics.footfall_metrics import (
     aggregate_daily_visitors,
@@ -83,22 +86,9 @@ def snowflake_stores(limit: int = 100):
 
 
 @router.get("/cannibalization")
-def snowflake_cannibalization(
-    radius_km: float = Query(default=2.0, gt=0),
-    min_overlap_pct: float = Query(default=5.0, ge=0, le=100),
-):
+def snowflake_cannibalization():
     try:
-        visits = get_snowflake_footfall_visits()
-        stores = get_snowflake_stores(limit=1000)
-
-        store_metrics = aggregate_daily_visitors(visits)
-
-        pairs = find_cannibalization_pairs(
-            store_metrics=store_metrics,
-            store_locations=stores,
-            radius_km=radius_km,
-            min_overlap_pct=min_overlap_pct,
-        )
+        pairs = get_snowflake_cannibalization()
 
         return {
             "status": "success",
@@ -107,9 +97,30 @@ def snowflake_cannibalization(
             "pairs": pairs,
         }
 
-    except Exception as error:
+    except Exception:
         raise HTTPException(
             status_code=503,
-            detail=f"Snowflake cannibalization data unavailable: {str(error)}"
+            detail="Snowflake cannibalization data unavailable"
+        )
+
+
+@router.get("/hourly-footfall")
+def snowflake_hourly_footfall(
+    limit: int = Query(default=24, ge=1, le=100),
+):
+    try:
+        records = get_snowflake_hourly_footfall(limit=limit)
+
+        return {
+            "status": "success",
+            "source": "snowflake",
+            "count": len(records),
+            "data": records,
+        }
+
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail="Snowflake hourly footfall data unavailable"
         )
     
