@@ -85,35 +85,8 @@ function formatDistance(distance) {
 }
 
 
-import API_BASE_URL from "../services/api";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip
-} from "recharts";
-
-
 const CANNIBALIZATION_API_URL =
-  `${API_BASE_URL}/snowflake/cannibalization?radius_km=1&min_overlap_pct=5`;
-
-
-// Format distance
-function formatDistance(distance) {
-  if (distance === null) {
-    return "N/A";
-  }
-
-  if (distance < 1000) {
-    return `${Math.round(distance)} m`;
-  }
-
-  return `${(distance / 1000).toFixed(2)} km`;
-}
+  `${API_BASE_URL}/snowflake/cannibalization`;
 
 
 function Cannibalization() {
