@@ -259,11 +259,9 @@ setSelectedPair(null);
 
       },
       [
-        [
   fetchStores,
   fetchCannibalizationPairs
 ]
-      ]
     );
 
 
@@ -287,63 +285,27 @@ setSelectedPair(null);
 
 
   // Create nearby store pairs
-    const storePairs =
-    useMemo(() => {
+  const storePairs =
+  useMemo(() => {
+    return cannibalizationPairs.map(
+      (pair) => ({
+        storeAId: pair.existing_store_name,
+        storeAName: pair.existing_store_name,
 
-      const storeMap =
-        new Map(
-          stores.map((store) => [
-            String(store.store_id),
-            store
-          ])
-        );
+        storeBId: pair.new_store_name,
+        storeBName: pair.new_store_name,
 
-      return cannibalizationPairs.map(
-        (pair) => {
+        sharedVisitors:
+          Number(pair.shared_visitors_count) || 0,
 
-          const storeA =
-            storeMap.get(
-              String(pair.store_a)
-            );
+        totalExistingCustomers:
+          Number(pair.total_existing_customers) || 0,
 
-          const storeB =
-            storeMap.get(
-              String(pair.store_b)
-            );
-
-          return {
-            storeAId: pair.store_a,
-            storeAName:
-              storeA?.store_name ??
-              String(pair.store_a),
-
-            storeBId: pair.store_b,
-            storeBName:
-              storeB?.store_name ??
-              String(pair.store_b),
-
-            distance:
-              Number(pair.distance_km) * 1000,
-            sharedVisitors:
-              Number(pair.shared_visitors) || 0,
-
-            jaccardIndex:
-              Number(pair.jaccard_index) || 0,
-
-            overlapPctStoreA:
-              Number(pair.overlap_pct_store_a) || 0,
-
-            overlapPctStoreB:
-              Number(pair.overlap_pct_store_b) || 0
-          };
-
-        }
-      );
-
-    }, [
-      stores,
-      cannibalizationPairs
-    ]);
+        cannibalizationPercentage:
+          Number(pair.cannibalization_percentage) || 0
+      })
+    );
+  }, [cannibalizationPairs]);
 
 
   // Search
