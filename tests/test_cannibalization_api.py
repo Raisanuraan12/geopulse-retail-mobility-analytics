@@ -15,8 +15,7 @@ if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
 from backend.main import app
-import routers.snowflake as snowflake_router
-
+import routers.snowflake as snowflake_router  # pyright: ignore[reportMissingImports]
 
 client = TestClient(app)
 
