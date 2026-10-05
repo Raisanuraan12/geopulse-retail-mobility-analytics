@@ -22,75 +22,30 @@ client = TestClient(app)
 
 
 def test_cannibalization_endpoint(monkeypatch):
-    visits = [
+    cannibalization_records = [
         {
-            "store_id": "STORE_A",
-            "store_name": "Store A",
-            "visit_date": "2026-09-08",
-            "device_id": "DEVICE_001",
-            "dwell_minutes": 15.0,
-            "visit_type": "short_visit",
+            "existing_store_name": "GeoPulse Store 053",
+            "new_store_name": "GeoPulse Store 100",
+            "shared_visitors_count": 1,
+            "total_existing_customers": 1,
+            "cannibalization_percentage": 100.0,
         },
         {
-            "store_id": "STORE_A",
-            "store_name": "Store A",
-            "visit_date": "2026-09-08",
-            "device_id": "DEVICE_002",
-            "dwell_minutes": 20.0,
-            "visit_type": "short_visit",
-        },
-        {
-            "store_id": "STORE_B",
-            "store_name": "Store B",
-            "visit_date": "2026-09-08",
-            "device_id": "DEVICE_002",
-            "dwell_minutes": 25.0,
-            "visit_type": "short_visit",
-        },
-        {
-            "store_id": "STORE_B",
-            "store_name": "Store B",
-            "visit_date": "2026-09-08",
-            "device_id": "DEVICE_003",
-            "dwell_minutes": 35.0,
-            "visit_type": "long_visit",
-        },
-    ]
-
-    stores = [
-        {
-            "store_id": "STORE_A",
-            "store_name": "Store A",
-            "latitude": 18.5204,
-            "longitude": 73.8567,
-        },
-        {
-            "store_id": "STORE_B",
-            "store_name": "Store B",
-            "latitude": 18.5210,
-            "longitude": 73.8570,
+            "existing_store_name": "GeoPulse Store 032",
+            "new_store_name": "GeoPulse Store 041",
+            "shared_visitors_count": 1,
+            "total_existing_customers": 1,
+            "cannibalization_percentage": 100.0,
         },
     ]
 
     monkeypatch.setattr(
         snowflake_router,
-        "get_snowflake_footfall_visits",
-        lambda: visits,
+        "get_snowflake_cannibalization",
+        lambda: cannibalization_records,
     )
 
-    monkeypatch.setattr(
-        snowflake_router,
-        "get_snowflake_stores",
-        lambda limit=1000: stores,
-    )
-
-    response = client.get(
-        "/snowflake/cannibalization",
-        params={
-            "radius_km": 2.0,
-            "min_overlap_pct": 5.0,
-        },
-    )
+    response = client.get("/snowflake/cannibalization")
 
     assert response.status_code == 200
 
@@ -98,29 +53,50 @@ def test_cannibalization_endpoint(monkeypatch):
 
     assert data["status"] == "success"
     assert data["source"] == "snowflake"
-    assert data["count"] == 1
+    assert data["count"] == 2
+    assert data["pairs"] == cannibalization_records
 
     pair = data["pairs"][0]
 
-    assert pair["store_a"] == "STORE_A"
-    assert pair["store_b"] == "STORE_B"
-    assert pair["shared_visitors"] == 1
-    assert pair["jaccard_index"] > 0
-    assert pair["overlap_pct_store_a"] > 0
-    assert pair["overlap_pct_store_b"] > 0
+    assert pair["existing_store_name"] == "GeoPulse Store 053"
+    assert pair["new_store_name"] == "GeoPulse Store 100"
+    assert pair["shared_visitors_count"] == 1
+    assert pair["total_existing_customers"] == 1
+    assert pair["cannibalization_percentage"] == 100.0
 
-def test_cannibalization_rejects_invalid_radius():
-    response = client.get(
-        "/snowflake/cannibalization",
-        params={"radius_km": -1},
+
+def test_cannibalization_returns_empty_result(monkeypatch):
+    monkeypatch.setattr(
+        snowflake_router,
+        "get_snowflake_cannibalization",
+        lambda: [],
     )
 
-    assert response.status_code == 422
+    response = client.get("/snowflake/cannibalization")
 
-def test_cannibalization_rejects_invalid_overlap_percentage():
-    response = client.get(
-        "/snowflake/cannibalization",
-        params={"min_overlap_pct": 101},
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["status"] == "success"
+    assert data["source"] == "snowflake"
+    assert data["count"] == 0
+    assert data["pairs"] == []
+
+
+def test_cannibalization_handles_snowflake_failure(monkeypatch):
+    def raise_snowflake_error():
+        raise RuntimeError("Snowflake unavailable")
+
+    monkeypatch.setattr(
+        snowflake_router,
+        "get_snowflake_cannibalization",
+        raise_snowflake_error,
     )
 
-    assert response.status_code == 422
+    response = client.get("/snowflake/cannibalization")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Snowflake cannibalization data unavailable"
+    )
