@@ -21,3 +21,8 @@ models:
   geopulse:
     # Default materialization for your models
     +materialized: view
+
+
+
+on-run-end:
+  - "{{ grant_api_access() }}"
