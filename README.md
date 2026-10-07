@@ -46,6 +46,15 @@ Uses Apache Airflow to automate spatial processing and transformation workflows.
 - Changes are tested before important commits and integration.
 - Pull requests are reviewed before major changes are merged into `main`.
 
-## Project Status
+## Analytics Lead Contributions (Raisa Nuraan)
 
-🚧 Development in Progress
+### Key Deliverables & Architecture
+* **Spatial Data Warehousing (Snowflake):** Architected database schemas, staging environments, and secure read-only views (`api_v_hourly_footfall`) optimized for downstream React application consumption.
+* **Analytics Engineering (dbt):** Developed modular data marts to calculate temporal commute spikes (`fct_hourly_footfall`) and shared visitor boundaries (`fct_store_cannibalization`). 
+* **Automated Orchestration (Airflow):** Integrated `dbt` transformations into a daily Apache Airflow DAG (`geopulse_daily_pipeline.py`) triggered seamlessly after distributed spatial joins.
+* **Data Quality & CI/CD:** Implemented generic and custom `dbt` tests, a Python `pytest` integration suite for strict API schema validation, and post-run `dbt` macros for automated role-based access control (RBAC) grants.
+* **3D Geospatial Visualization (Kepler.gl):** Configured JSON parameters to render 3D H3 hexagons and time-series sliders, enabling interactive UI playback of 24-hour foot traffic density.
+
+### Security Protocols
+* **Zero-Secrets Policy:** All database credentials, warehouse targets, and API keys are injected dynamically at runtime via environment variables. No plain-text credentials exist in the codebase.
+* **Least Privilege Access:** Implemented Snowflake Secure Views to obfuscate underlying data logic, managed by automated post-hook role grants to ensure stable but restricted access for the `backend_api_role`.
